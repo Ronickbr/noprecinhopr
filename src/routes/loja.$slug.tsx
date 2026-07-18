@@ -120,7 +120,6 @@ function StorePage() {
             {featured.map((p) => (
               <ProductCard
                 key={`f-${p.id}`}
-                id={p.id}
                 slug={p.slug}
                 name={p.name}
                 brand={p.brand}
