@@ -61,7 +61,7 @@ function StorePage() {
   const navigate = Route.useNavigate();
   const { data } = useSuspenseQuery(storeQuery(slug, sort, page));
   if (!data) return null;
-  const { store, items, total, offers_total, pageSize } = data;
+  const { store, featured, items, total, offers_total, pageSize } = data;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
