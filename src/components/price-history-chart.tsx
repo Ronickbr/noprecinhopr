@@ -32,7 +32,7 @@ export function PriceHistoryChart({ data }: Props) {
             width={60}
           />
           <Tooltip
-            formatter={(v: number) => [formatBRL(v), "Menor preço"]}
+            formatter={(v) => [formatBRL(Number(v)), "Menor preço"]}
             labelFormatter={(d) => new Date(d as string).toLocaleDateString("pt-BR")}
             contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", fontSize: 12 }}
           />
