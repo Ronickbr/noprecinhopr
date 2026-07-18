@@ -15,36 +15,45 @@ export function ProductCard(p: Props) {
     <Link
       to="/produto/$slug"
       params={{ slug: p.slug }}
-      className="group block bg-card border border-border rounded-lg overflow-hidden hover:border-primary/40 transition-colors"
+      className="group block bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-all"
     >
-      <div className="aspect-square bg-muted overflow-hidden">
+      <div className="aspect-square bg-background/40 border-b border-border overflow-hidden relative">
         {p.image_url ? (
           <img
             src={p.image_url}
             alt={p.name}
             loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform"
+            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-            sem imagem
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs font-mono">
+            NO_IMAGE
           </div>
         )}
       </div>
-      <div className="p-3">
-        {p.brand ? (
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{p.brand}</p>
-        ) : null}
-        <h3 className="mt-0.5 text-sm font-medium text-foreground line-clamp-2 min-h-10">{p.name}</h3>
-        <div className="mt-2 flex items-baseline justify-between">
-          <p className="font-serif text-lg font-semibold text-foreground">
-            {p.best_price_cents ? formatBRL(p.best_price_cents) : "—"}
-          </p>
+      <div className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+          {p.brand ? (
+            <p className="text-[10px] uppercase tracking-widest font-mono text-muted-foreground truncate">
+              {p.brand}
+            </p>
+          ) : <span />}
           {p.offer_count > 0 ? (
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-[10px] font-mono text-muted-foreground shrink-0">
               {p.offer_count} {p.offer_count === 1 ? "loja" : "lojas"}
             </span>
           ) : null}
+        </div>
+        <h3 className="text-sm font-medium text-foreground line-clamp-2 min-h-10 leading-tight group-hover:text-primary transition-colors">
+          {p.name}
+        </h3>
+        <div className="pt-3 border-t border-border">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            A partir de
+          </p>
+          <p className="mt-0.5 font-mono text-xl font-bold tracking-tighter text-foreground">
+            {p.best_price_cents ? formatBRL(p.best_price_cents) : "—"}
+          </p>
         </div>
       </div>
     </Link>

@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getHomeData } from "@/lib/products.functions";
 import { ProductCard } from "@/components/product-card";
-import { TrendingUp, ShieldCheck, LineChart as LineIcon } from "lucide-react";
 
 const homeQuery = queryOptions({
   queryKey: ["home"],
@@ -12,7 +11,7 @@ const homeQuery = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "PrecinhoBom — o menor preço, com histórico e alertas" },
+      { title: "PrecinhoBom — o menor preço, calculado em tempo real" },
       {
         name: "description",
         content:
@@ -28,101 +27,110 @@ function Home() {
   const { data } = useSuspenseQuery(homeQuery);
 
   return (
-    <div>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 space-y-20">
       {/* Hero */}
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-24 grid gap-8 md:grid-cols-[1.4fr_1fr] items-end">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              Edição de hoje · Curadoria independente
-            </p>
-            <h1 className="mt-4 font-serif text-5xl sm:text-6xl font-semibold leading-[1.05] tracking-tight text-foreground">
-              O menor preço.<br />
-              <span className="text-primary">Sem enrolação.</span>
-            </h1>
-            <p className="mt-6 text-lg text-muted-foreground max-w-lg">
-              Comparamos ofertas de milhares de lojas, guardamos 90 dias de
-              histórico e avisamos quando o preço cai. Nunca cobramos por
-              posição.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                to="/busca"
-                search={{ sort: "price_asc", page: 1 }}
-                className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90"
-              >
-                Explorar ofertas
-              </Link>
-              <Link
-                to="/lojista"
-                className="inline-flex items-center gap-2 h-11 px-5 rounded-full border border-input text-sm font-medium hover:bg-accent"
-              >
-                Sou lojista
-              </Link>
-            </div>
+      <section className="relative">
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-10 right-0 w-72 h-72 bg-success/10 blur-[100px] rounded-full pointer-events-none" />
+        <div className="relative space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-mono">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+            SISTEMA DE MONITORAMENTO ATIVO
           </div>
-          <div className="grid gap-3 text-sm">
-            <div className="flex gap-3 p-4 rounded-lg bg-card border border-border">
-              <TrendingUp className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-foreground">Melhor preço, sempre</p>
-                <p className="text-muted-foreground">Ordenamos por preço, não por patrocínio.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 p-4 rounded-lg bg-card border border-border">
-              <LineIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-foreground">Histórico de 90 dias</p>
-                <p className="text-muted-foreground">Descubra se é hora de comprar ou esperar.</p>
-              </div>
-            </div>
-            <div className="flex gap-3 p-4 rounded-lg bg-card border border-border">
-              <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-foreground">Lojas verificadas</p>
-                <p className="text-muted-foreground">Trust score público, sem enrolação.</p>
-              </div>
-            </div>
+          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tighter max-w-4xl leading-[0.95] text-foreground">
+            O menor preço,{" "}
+            <span className="text-gradient-tech">calculado em tempo real.</span>
+          </h1>
+          <p className="text-muted-foreground max-w-xl text-lg">
+            Analisamos milhões de variações de preços em milhares de lojas para
+            garantir que você nunca pague um centavo a mais.
+          </p>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Link
+              to="/busca"
+              search={{ sort: "price_asc", page: 1 }}
+              className="inline-flex items-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition glow-primary"
+            >
+              Explorar ofertas →
+            </Link>
+            <Link
+              to="/lojista"
+              className="inline-flex items-center gap-2 h-11 px-6 rounded-md border border-border text-sm font-semibold text-foreground hover:bg-accent transition"
+            >
+              Sou lojista
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-serif text-2xl font-semibold text-foreground">Categorias</h2>
-          <Link to="/busca" search={{ sort: "price_asc", page: 1 }} className="text-sm text-primary hover:underline">
+      {/* Categorias */}
+      <section className="space-y-6">
+        <div className="flex items-center gap-6">
+          <h2 className="text-sm font-mono uppercase tracking-widest text-muted-foreground">
+            Categorias Base
+          </h2>
+          <div className="h-px flex-1 bg-border" />
+          <Link
+            to="/busca"
+            search={{ sort: "price_asc", page: 1 }}
+            className="text-xs font-mono uppercase tracking-widest text-primary hover:opacity-80"
+          >
             Ver tudo →
           </Link>
         </div>
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {data.categories.map((c) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {data.categories.slice(0, 11).map((c, i) => (
             <Link
               key={c.id}
               to="/categoria/$slug"
               params={{ slug: c.slug }}
-              className="p-4 rounded-lg bg-card border border-border hover:border-primary/40"
+              className="group cursor-pointer bg-card/60 border border-border p-5 rounded-xl hover:bg-card hover:border-primary/40 transition-all"
             >
-              <p className="font-medium text-foreground">{c.name}</p>
-              <p className="text-xs text-muted-foreground mt-1">Explorar →</p>
+              <div className="font-mono text-[10px] text-muted-foreground group-hover:text-primary transition-colors mb-2">
+                {String(i + 1).padStart(2, "0")}
+              </div>
+              <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                {c.name}
+              </div>
             </Link>
           ))}
+          <Link
+            to="/busca"
+            search={{ sort: "price_asc", page: 1 }}
+            className="group cursor-pointer border border-dashed border-border p-5 rounded-xl hover:border-primary/40 transition-all flex flex-col items-start justify-between"
+          >
+            <div className="font-mono text-[10px] text-muted-foreground mb-2">++</div>
+            <div className="text-sm font-semibold text-muted-foreground group-hover:text-foreground">
+              Ver mais
+            </div>
+          </Link>
         </div>
       </section>
 
-      {/* Featured */}
-      <section className="mx-auto max-w-6xl px-4 sm:px-6 pb-16">
-        <div className="flex items-baseline justify-between">
+      {/* Ofertas em alta */}
+      <section className="space-y-8">
+        <div className="flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              Destaque da semana
-            </p>
-            <h2 className="mt-1 font-serif text-2xl font-semibold text-foreground">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tighter text-foreground">
               Ofertas em alta
             </h2>
+            <p className="text-muted-foreground font-mono text-xs sm:text-sm mt-2 uppercase tracking-widest">
+              DATA_STREAM: TOP_VALUATED_DEALS
+            </p>
           </div>
+          <Link
+            to="/busca"
+            search={{ sort: "price_asc", page: 1 }}
+            className="hidden sm:inline-flex px-4 py-2 bg-card border border-border rounded-md text-xs font-mono uppercase tracking-widest hover:bg-accent transition-colors"
+          >
+            Ver relatório completo
+          </Link>
         </div>
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {data.products.map((p) => (
             <ProductCard key={p.id} {...p} />
           ))}
