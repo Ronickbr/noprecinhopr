@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authenticated/lojista/")({
 });
 
 function LojistaPage() {
-  const [tab, setTab] = useState<"loja" | "catalogo" | "analytics">("loja");
+  const [tab, setTab] = useState<"loja" | "vitrine" | "catalogo" | "analytics">("loja");
   const { data: sub } = useQuery({ queryKey: ["my-subscription"], queryFn: () => getMySubscription() });
   const now = Date.now();
   const trialOk = sub?.status === "trialing" && sub.trial_ends_at && new Date(sub.trial_ends_at).getTime() > now;
