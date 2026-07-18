@@ -678,10 +678,38 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
 
     const { data: store } = await sb
       .from("stores")
-      .select("id, slug, name, logo_url, description, trust_score, status")
+      .select("id, slug, name, logo_url, description, trust_score, status, banner_url, secondary_banner_url, about, featured_product_ids")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!store) return null;
+
+    // Featured products chosen by the merchant
+    const featuredIds = Array.isArray(store.featured_product_ids) ? store.featured_product_ids : [];
+    let featured: Array<{ id: string; slug: string; name: string; brand: string | null; image_url: string | null; best_price_cents: number }> = [];
+    if (featuredIds.length) {
+      const { data: fprods } = await sb
+        .from("products")
+        .select("id, slug, name, brand, image_url")
+        .in("id", featuredIds);
+      const { data: foffers } = await sb
+        .from("offers")
+        .select("product_id, price_cents")
+        .eq("store_id", store.id)
+        .in("product_id", featuredIds);
+      const priceMap = new Map<string, number>();
+      for (const o of foffers ?? []) {
+        const cur = priceMap.get(o.product_id);
+        if (cur == null || o.price_cents < cur) priceMap.set(o.product_id, o.price_cents);
+      }
+      const map = new Map(fprods?.map((p) => [p.id, p]) ?? []);
+      featured = featuredIds
+        .map((id) => {
+          const p = map.get(id);
+          if (!p) return null;
+          return { ...p, best_price_cents: priceMap.get(id) ?? 0 };
+        })
+        .filter((x): x is NonNullable<typeof x> => x != null);
+    }
 
     // All offers of this store
     const { data: storeOffers, count } = await sb
