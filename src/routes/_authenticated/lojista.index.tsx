@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Papa from "papaparse";
 import { toast } from "sonner";
 import { getMyStore, upsertMyStore, uploadCatalog, getStoreAnalytics } from "@/lib/products.functions";
+import { getMySubscription } from "@/lib/subscriptions.functions";
 
-import { Upload, Store as StoreIcon, BarChart3 } from "lucide-react";
+import { Upload, Store as StoreIcon, BarChart3, CreditCard, Lock } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/lojista/")({
   head: () => ({ meta: [{ title: "Painel do lojista — PrecinhoBom" }, { name: "robots", content: "noindex" }] }),
