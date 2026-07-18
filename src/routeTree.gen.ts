@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
+import { Route as LojaSlugRouteImport } from './routes/loja.$slug'
 import { Route as CategoriaSlugRouteImport } from './routes/categoria.$slug'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -52,6 +53,11 @@ const IndexRoute = IndexRouteImport.update({
 const ProdutoSlugRoute = ProdutoSlugRouteImport.update({
   id: '/produto/$slug',
   path: '/produto/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojaSlugRoute = LojaSlugRouteImport.update({
+  id: '/loja/$slug',
+  path: '/loja/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriaSlugRoute = CategoriaSlugRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
+  '/loja/$slug': typeof LojaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/admin/lojistas': typeof AuthenticatedAdminLojistasRoute
   '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
+  '/loja/$slug': typeof LojaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/admin/lojistas': typeof AuthenticatedAdminLojistasRoute
   '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
+  '/loja/$slug': typeof LojaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/_authenticated/admin/lojistas': typeof AuthenticatedAdminLojistasRoute
   '/_authenticated/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/minha-conta'
     | '/categoria/$slug'
+    | '/loja/$slug'
     | '/produto/$slug'
     | '/admin/lojistas'
     | '/lojista/assinatura'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/minha-conta'
     | '/categoria/$slug'
+    | '/loja/$slug'
     | '/produto/$slug'
     | '/admin/lojistas'
     | '/lojista/assinatura'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/minha-conta'
     | '/categoria/$slug'
+    | '/loja/$slug'
     | '/produto/$slug'
     | '/_authenticated/admin/lojistas'
     | '/_authenticated/lojista/assinatura'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   BuscaRoute: typeof BuscaRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   CategoriaSlugRoute: typeof CategoriaSlugRoute
+  LojaSlugRoute: typeof LojaSlugRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
   ApiPublicTrackRoute: typeof ApiPublicTrackRoute
 }
@@ -260,6 +273,13 @@ declare module '@tanstack/react-router' {
       path: '/produto/$slug'
       fullPath: '/produto/$slug'
       preLoaderRoute: typeof ProdutoSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loja/$slug': {
+      id: '/loja/$slug'
+      path: '/loja/$slug'
+      fullPath: '/loja/$slug'
+      preLoaderRoute: typeof LojaSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categoria/$slug': {
@@ -380,6 +400,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuscaRoute: BuscaRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   CategoriaSlugRoute: CategoriaSlugRoute,
+  LojaSlugRoute: LojaSlugRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
   ApiPublicTrackRoute: ApiPublicTrackRoute,
 }
