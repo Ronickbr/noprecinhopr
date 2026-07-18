@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/track")({
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           await supabaseAdmin.from("clicks").insert({
             offer_id: offerId,
-            referrer: request.headers.get("referer"),
+            referer: request.headers.get("referer"),
             user_agent: request.headers.get("user-agent"),
           });
         } catch {
