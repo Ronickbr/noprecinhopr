@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Papa from "papaparse";
 import { toast } from "sonner";
-import { getMyStore, upsertMyStore, uploadCatalog, getStoreAnalytics } from "@/lib/products.functions";
+import { getMyStore, upsertMyStore, uploadCatalog, getStoreAnalytics, listMyStoreProducts } from "@/lib/products.functions";
 import { getMySubscription } from "@/lib/subscriptions.functions";
+import { formatBRL } from "@/lib/format";
 
-import { Upload, Store as StoreIcon, BarChart3, CreditCard, Lock } from "lucide-react";
+import { Upload, Store as StoreIcon, BarChart3, CreditCard, Lock, Image as ImageIcon, ExternalLink } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/lojista/")({
