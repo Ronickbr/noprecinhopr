@@ -50,7 +50,7 @@ function SearchPage() {
   });
 
   const update = (patch: Partial<typeof search>) =>
-    navigate({ to: ".", search: (prev) => ({ ...prev, ...patch, page: 1 }) });
+    navigate({ to: "/busca", search: { ...search, ...patch, page: 1 } });
 
   const totalPages = productsQuery.data ? Math.ceil(productsQuery.data.total / productsQuery.data.pageSize) : 1;
 
