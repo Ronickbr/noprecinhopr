@@ -267,3 +267,148 @@ function Stat({ label, value }: { label: string; value: number }) {
     </div>
   );
 }
+
+function StorefrontEditor() {
+  const qc = useQueryClient();
+  const { data: store } = useQuery({ queryKey: ["my-store"], queryFn: () => getMyStore() });
+  const { data: myProducts } = useQuery({ queryKey: ["my-store-products"], queryFn: () => listMyStoreProducts() });
+  const [banner, setBanner] = useState("");
+  const [banner2, setBanner2] = useState("");
+  const [about, setAbout] = useState("");
+  const [featured, setFeatured] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (store) {
+      setBanner(store.banner_url ?? "");
+      setBanner2(store.secondary_banner_url ?? "");
+      setAbout(store.about ?? "");
+      setFeatured(Array.isArray(store.featured_product_ids) ? store.featured_product_ids : []);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
+
+  const save = useMutation({
+    mutationFn: () =>
+      upsertMyStore({
+        data: {
+          name: store!.name,
+          slug: store!.slug,
+          description: store?.description ?? null,
+          logo_url: store?.logo_url ?? "",
+          banner_url: banner,
+          secondary_banner_url: banner2,
+          about,
+          featured_product_ids: featured,
+        },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-store"] });
+      toast.success("Vitrine atualizada!");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (!store) {
+    return (
+      <div className="p-4 rounded-lg border border-border bg-card text-sm text-muted-foreground">
+        Cadastre sua loja primeiro na aba "Loja".
+      </div>
+    );
+  }
+
+  function toggleFeatured(id: string) {
+    setFeatured((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= 12 ? prev : [...prev, id],
+    );
+  }
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-serif text-xl text-foreground">Personalize sua página pública</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Como aparece em{" "}
+            <Link to="/loja/$slug" params={{ slug: store.slug }} className="text-primary hover:underline inline-flex items-center gap-1">
+              /loja/{store.slug} <ExternalLink className="h-3 w-3" />
+            </Link>
+          </p>
+        </div>
+      </div>
+
+      <Field label="Banner principal (URL da imagem)" hint="Recomendado: 1600×400px">
+        <input
+          className="w-full h-11 px-3 rounded border border-input bg-card text-sm"
+          value={banner}
+          placeholder="https://…/banner.jpg"
+          onChange={(e) => setBanner(e.target.value)}
+        />
+      </Field>
+      {banner ? (
+        <div className="rounded-lg overflow-hidden border border-border bg-muted aspect-[4/1]">
+          <img src={banner} alt="Prévia" className="w-full h-full object-cover" />
+        </div>
+      ) : null}
+
+      <Field label="Banner secundário (opcional)">
+        <input
+          className="w-full h-11 px-3 rounded border border-input bg-card text-sm"
+          value={banner2}
+          placeholder="https://…/banner-2.jpg"
+          onChange={(e) => setBanner2(e.target.value)}
+        />
+      </Field>
+
+      <Field label="Sobre a loja" hint="Aparece na página pública">
+        <textarea
+          className="w-full min-h-32 px-3 py-2 rounded border border-input bg-card text-sm"
+          value={about}
+          onChange={(e) => setAbout(e.target.value)}
+        />
+      </Field>
+
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Produtos em destaque</p>
+            <p className="text-xs text-muted-foreground">Selecione até 12 produtos do seu catálogo.</p>
+          </div>
+          <span className="text-xs font-mono text-muted-foreground">{featured.length}/12</span>
+        </div>
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto p-2 rounded-lg border border-border bg-card">
+          {(myProducts ?? []).length === 0 ? (
+            <p className="col-span-full text-sm text-muted-foreground text-center py-8">
+              Envie seu catálogo primeiro para poder destacar produtos.
+            </p>
+          ) : (
+            (myProducts ?? []).map((p) => {
+              const selected = featured.includes(p.id);
+              return (
+                <button
+                  type="button"
+                  key={p.id}
+                  onClick={() => toggleFeatured(p.id)}
+                  className={`text-left rounded-md border p-2 transition ${selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                >
+                  <div className="aspect-square rounded bg-muted mb-2 overflow-hidden">
+                    {p.image_url ? <img src={p.image_url} alt={p.name} className="w-full h-full object-contain" /> : null}
+                  </div>
+                  <p className="text-xs font-medium line-clamp-2">{p.name}</p>
+                  <p className="text-xs font-mono text-muted-foreground mt-0.5">{formatBRL(p.price_cents)}</p>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={() => save.mutate()}
+        disabled={save.isPending}
+        className="rounded-full bg-primary text-primary-foreground px-5 h-11 text-sm font-medium hover:opacity-90 disabled:opacity-50"
+      >
+        {save.isPending ? "Salvando…" : "Salvar vitrine"}
+      </button>
+    </div>
+  );
+}
