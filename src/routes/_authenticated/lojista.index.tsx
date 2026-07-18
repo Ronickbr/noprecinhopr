@@ -60,6 +60,7 @@ function LojistaPage() {
       <div className="mt-6 flex gap-1 border-b border-border">
         {[
           { k: "loja", l: "Loja", i: StoreIcon },
+          { k: "vitrine", l: "Vitrine", i: ImageIcon },
           { k: "catalogo", l: "Catálogo (CSV)", i: Upload },
           { k: "analytics", l: "Analytics", i: BarChart3 },
         ].map((t) => (
@@ -74,7 +75,7 @@ function LojistaPage() {
       </div>
 
       <div className="mt-6">
-        {tab === "loja" ? <StoreForm /> : tab === "catalogo" ? <CatalogUpload /> : <Analytics />}
+        {tab === "loja" ? <StoreForm /> : tab === "vitrine" ? <StorefrontEditor /> : tab === "catalogo" ? <CatalogUpload /> : <Analytics />}
       </div>
     </div>
   );
