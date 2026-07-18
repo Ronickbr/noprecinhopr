@@ -1,7 +1,12 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/minha-conta")({
   head: () => ({ meta: [{ title: "Minha conta — PrecinhoBom" }, { name: "robots", content: "noindex" }] }),
+  beforeLoad: ({ location }) => {
+    if (location.pathname === "/minha-conta" || location.pathname === "/minha-conta/") {
+      throw redirect({ to: "/minha-conta/favoritos" });
+    }
+  },
   component: Layout,
 });
 
