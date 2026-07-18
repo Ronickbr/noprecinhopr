@@ -155,18 +155,23 @@ function ProductPage() {
         <div className="mt-4 divide-y divide-border border border-border rounded-lg bg-card">
           {offers.map((o, i) => (
             <div key={o.id} className="flex items-center gap-4 p-4">
-              <Link
-                to="/loja/$slug"
-                params={{ slug: o.store?.slug ?? "" }}
-                disabled={!o.store?.slug}
-                className="w-12 h-12 rounded bg-muted flex items-center justify-center shrink-0 hover:ring-2 hover:ring-primary/40 transition"
-              >
-                {o.store?.logo_url ? (
-                  <img src={o.store.logo_url} alt={o.store.name} className="w-10 h-10 object-contain" />
-                ) : (
+              {o.store?.slug ? (
+                <Link
+                  to="/loja/$slug"
+                  params={{ slug: o.store.slug }}
+                  className="w-12 h-12 rounded bg-muted flex items-center justify-center shrink-0 hover:ring-2 hover:ring-primary/40 transition"
+                >
+                  {o.store.logo_url ? (
+                    <img src={o.store.logo_url} alt={o.store.name} className="w-10 h-10 object-contain" />
+                  ) : (
+                    <Store className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </Link>
+              ) : (
+                <div className="w-12 h-12 rounded bg-muted flex items-center justify-center shrink-0">
                   <Store className="h-5 w-5 text-muted-foreground" />
-                )}
-              </Link>
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 {o.store?.slug ? (
                   <Link
