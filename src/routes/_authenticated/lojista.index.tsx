@@ -7,7 +7,7 @@ import { getMyStore, upsertMyStore, uploadCatalog, getStoreAnalytics } from "@/l
 
 import { Upload, Store as StoreIcon, BarChart3 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/lojista")({
+export const Route = createFileRoute("/_authenticated/lojista/")({
   head: () => ({ meta: [{ title: "Painel do lojista — PrecinhoBom" }, { name: "robots", content: "noindex" }] }),
   component: LojistaPage,
 });
