@@ -303,11 +303,14 @@ export const upsertMyStore = createServerFn({ method: "POST" })
         slug: z.string().trim().min(2).max(60).regex(/^[a-z0-9-]+$/, "Slug inválido"),
         description: z.string().max(500).optional().nullable(),
         logo_url: z.string().url().optional().nullable().or(z.literal("")),
+        banner_url: z.string().url().optional().nullable().or(z.literal("")),
+        secondary_banner_url: z.string().url().optional().nullable().or(z.literal("")),
+        about: z.string().max(4000).optional().nullable(),
+        featured_product_ids: z.array(z.string().uuid()).max(12).optional().nullable(),
       })
       .parse(raw),
   )
   .handler(async ({ data, context }) => {
-    // Grant merchant role
     await context.supabase.from("user_roles").insert({ user_id: context.userId, role: "merchant" }).select();
 
     const { data: existing } = await context.supabase
@@ -316,29 +319,56 @@ export const upsertMyStore = createServerFn({ method: "POST" })
       .eq("owner_user_id", context.userId)
       .maybeSingle();
 
+    const payload = {
+      name: data.name,
+      slug: data.slug,
+      description: data.description ?? null,
+      logo_url: data.logo_url || null,
+      banner_url: data.banner_url || null,
+      secondary_banner_url: data.secondary_banner_url || null,
+      about: data.about ?? null,
+      featured_product_ids: data.featured_product_ids ?? [],
+    };
+
     if (existing) {
-      const { error } = await context.supabase
-        .from("stores")
-        .update({
-          name: data.name,
-          slug: data.slug,
-          description: data.description ?? null,
-          logo_url: data.logo_url || null,
-        })
-        .eq("id", existing.id);
+      const { error } = await context.supabase.from("stores").update(payload).eq("id", existing.id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await context.supabase.from("stores").insert({
-        name: data.name,
-        slug: data.slug,
-        description: data.description ?? null,
-        logo_url: data.logo_url || null,
+        ...payload,
         owner_user_id: context.userId,
         status: "pending",
       });
       if (error) throw new Error(error.message);
     }
     return { ok: true };
+  });
+
+// List the merchant's own products (to choose featured ones)
+export const listMyStoreProducts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: store } = await context.supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    if (!store) return [];
+    const { data: offers } = await context.supabase
+      .from("offers")
+      .select("product_id, price_cents, products(id, slug, name, brand, image_url)")
+      .eq("store_id", store.id)
+      .order("updated_at", { ascending: false })
+      .limit(300);
+    const seen = new Set<string>();
+    const items: Array<{ id: string; slug: string; name: string; brand: string | null; image_url: string | null; price_cents: number }> = [];
+    for (const o of offers ?? []) {
+      const p = (o as { products: { id: string; slug: string; name: string; brand: string | null; image_url: string | null } | null }).products;
+      if (!p || seen.has(p.id)) continue;
+      seen.add(p.id);
+      items.push({ ...p, price_cents: (o as { price_cents: number }).price_cents });
+    }
+    return items;
   });
 
 const catalogRow = z.object({
@@ -377,15 +407,23 @@ export const uploadCatalog = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!store) throw new Error("Cadastre sua loja antes de enviar o catálogo.");
 
-    // Enforce max_products limit
-    const maxProducts = (sub.plan as { max_products: number | null } | null)?.max_products ?? null;
+    // Enforce max_products limit. Trial is capped at Starter (50 products) regardless of plan.
+    const TRIAL_CAP = 50;
+    const planMax = (sub.plan as { max_products: number | null } | null)?.max_products ?? null;
+    const maxProducts = trialOk
+      ? planMax == null ? TRIAL_CAP : Math.min(planMax, TRIAL_CAP)
+      : planMax;
     if (maxProducts !== null) {
       const { count: current } = await context.supabase
         .from("offers")
         .select("id", { count: "exact", head: true })
         .eq("store_id", store.id);
       if ((current ?? 0) + data.rows.length > maxProducts) {
-        throw new Error(`Seu plano permite até ${maxProducts} produtos ativos. Faça upgrade para enviar mais.`);
+        throw new Error(
+          trialOk
+            ? `Modo trial permite até ${maxProducts} produtos (igual ao plano Starter). Assine um plano para enviar mais.`
+            : `Seu plano permite até ${maxProducts} produtos ativos. Faça upgrade para enviar mais.`,
+        );
       }
     }
 
@@ -640,10 +678,38 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
 
     const { data: store } = await sb
       .from("stores")
-      .select("id, slug, name, logo_url, description, trust_score, status")
+      .select("id, slug, name, logo_url, description, trust_score, status, banner_url, secondary_banner_url, about, featured_product_ids")
       .eq("slug", data.slug)
       .maybeSingle();
     if (!store) return null;
+
+    // Featured products chosen by the merchant
+    const featuredIds = Array.isArray(store.featured_product_ids) ? store.featured_product_ids : [];
+    let featured: Array<{ id: string; slug: string; name: string; brand: string | null; image_url: string | null; best_price_cents: number }> = [];
+    if (featuredIds.length) {
+      const { data: fprods } = await sb
+        .from("products")
+        .select("id, slug, name, brand, image_url")
+        .in("id", featuredIds);
+      const { data: foffers } = await sb
+        .from("offers")
+        .select("product_id, price_cents")
+        .eq("store_id", store.id)
+        .in("product_id", featuredIds);
+      const priceMap = new Map<string, number>();
+      for (const o of foffers ?? []) {
+        const cur = priceMap.get(o.product_id);
+        if (cur == null || o.price_cents < cur) priceMap.set(o.product_id, o.price_cents);
+      }
+      const map = new Map(fprods?.map((p) => [p.id, p]) ?? []);
+      featured = featuredIds
+        .map((id) => {
+          const p = map.get(id);
+          if (!p) return null;
+          return { ...p, best_price_cents: priceMap.get(id) ?? 0 };
+        })
+        .filter((x): x is NonNullable<typeof x> => x != null);
+    }
 
     // All offers of this store
     const { data: storeOffers, count } = await sb
@@ -704,10 +770,119 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
 
     return {
       store,
+      featured,
       items,
       total,
       offers_total: count ?? (storeOffers?.length ?? 0),
       page: data.page,
       pageSize: PAGE_SIZE,
     };
+  });
+
+// ------------ ADMIN: extra actions ------------
+export const adminDeleteStore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("stores").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSetTrustScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({ id: z.string().uuid(), trust_score: z.number().min(0).max(5) }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { error } = await context.supabase
+      .from("stores")
+      .update({ trust_score: data.trust_score })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSetSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({
+      user_id: z.string().uuid(),
+      plan_id: z.string().uuid().nullable(),
+      status: z.enum(["trialing", "active", "canceled", "past_due", "expired"]),
+    }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + 30 * 86400_000).toISOString();
+    const trialEnd = new Date(now.getTime() + 30 * 86400_000).toISOString();
+
+    const { data: existing } = await supabaseAdmin
+      .from("merchant_subscriptions")
+      .select("id")
+      .eq("user_id", data.user_id)
+      .maybeSingle();
+
+    const payload = {
+      status: data.status,
+      canceled_at: data.status === "canceled" ? now.toISOString() : null,
+      current_period_end: data.status === "active" ? periodEnd : null,
+      trial_ends_at: data.status === "trialing" ? trialEnd : null,
+      ...(data.plan_id ? { plan_id: data.plan_id } : {}),
+    };
+
+    if (existing) {
+      const { error } = await supabaseAdmin.from("merchant_subscriptions").update(payload).eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else if (data.plan_id) {
+      const { error } = await supabaseAdmin
+        .from("merchant_subscriptions")
+        .insert({ user_id: data.user_id, plan_id: data.plan_id, ...payload });
+      if (error) throw new Error(error.message);
+    } else {
+      throw new Error("Selecione um plano para criar a assinatura.");
+    }
+    return { ok: true };
+  });
+
+export const adminGrantRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({
+      user_id: z.string().uuid(),
+      role: z.enum(["admin", "merchant", "user"]),
+      action: z.enum(["grant", "revoke"]),
+    }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.action === "grant") {
+      await supabaseAdmin.from("user_roles").insert({ user_id: data.user_id, role: data.role });
+    } else {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user_id).eq("role", data.role);
+    }
+    return { ok: true };
+  });
+
+export const listMerchantPlansForAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { data } = await context.supabase
+      .from("merchant_plans")
+      .select("id, slug, name, price_cents, max_products")
+      .eq("is_active", true)
+      .order("sort_order");
+    return data ?? [];
   });

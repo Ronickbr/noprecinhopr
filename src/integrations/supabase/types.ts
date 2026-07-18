@@ -384,36 +384,48 @@ export type Database = {
       }
       stores: {
         Row: {
+          about: string | null
+          banner_url: string | null
           created_at: string
           description: string | null
+          featured_product_ids: string[]
           id: string
           logo_url: string | null
           name: string
           owner_user_id: string | null
+          secondary_banner_url: string | null
           slug: string
           status: Database["public"]["Enums"]["store_status"]
           trust_score: number
           updated_at: string
         }
         Insert: {
+          about?: string | null
+          banner_url?: string | null
           created_at?: string
           description?: string | null
+          featured_product_ids?: string[]
           id?: string
           logo_url?: string | null
           name: string
           owner_user_id?: string | null
+          secondary_banner_url?: string | null
           slug: string
           status?: Database["public"]["Enums"]["store_status"]
           trust_score?: number
           updated_at?: string
         }
         Update: {
+          about?: string | null
+          banner_url?: string | null
           created_at?: string
           description?: string | null
+          featured_product_ids?: string[]
           id?: string
           logo_url?: string | null
           name?: string
           owner_user_id?: string | null
+          secondary_banner_url?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["store_status"]
           trust_score?: number

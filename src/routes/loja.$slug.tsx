@@ -61,11 +61,18 @@ function StorePage() {
   const navigate = Route.useNavigate();
   const { data } = useSuspenseQuery(storeQuery(slug, sort, page));
   if (!data) return null;
-  const { store, items, total, offers_total, pageSize } = data;
+  const { store, featured, items, total, offers_total, pageSize } = data;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
+      {/* Banner */}
+      {store.banner_url ? (
+        <div className="mb-8 rounded-2xl overflow-hidden border border-border aspect-[4/1] bg-muted">
+          <img src={store.banner_url} alt={`Banner ${store.name}`} className="w-full h-full object-cover" />
+        </div>
+      ) : null}
+
       {/* Header */}
       <header className="flex items-start gap-5 pb-8 border-b border-border">
         <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border">
@@ -91,6 +98,46 @@ function StorePage() {
           </div>
         </div>
       </header>
+
+      {/* About */}
+      {store.about ? (
+        <section className="mt-8">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Sobre a loja</p>
+          <p className="mt-2 text-sm text-foreground/90 whitespace-pre-line max-w-3xl">{store.about}</p>
+        </section>
+      ) : null}
+
+      {/* Featured */}
+      {featured && featured.length > 0 ? (
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-serif text-xl text-foreground">Destaques da loja</h2>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              Selecionados pelo lojista
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {featured.map((p) => (
+              <ProductCard
+                key={`f-${p.id}`}
+                slug={p.slug}
+                name={p.name}
+                brand={p.brand}
+                image_url={p.image_url}
+                best_price_cents={p.best_price_cents}
+                offer_count={1}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* Secondary banner */}
+      {store.secondary_banner_url ? (
+        <div className="my-10 rounded-2xl overflow-hidden border border-border aspect-[5/1] bg-muted">
+          <img src={store.secondary_banner_url} alt="" className="w-full h-full object-cover" />
+        </div>
+      ) : null}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between py-6">
