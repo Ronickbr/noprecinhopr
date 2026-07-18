@@ -17,6 +17,7 @@ import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as CategoriaSlugRouteImport } from './routes/categoria.$slug'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
 import { Route as AuthenticatedMinhaContaFavoritosRouteImport } from './routes/_authenticated/minha-conta.favoritos'
+import { Route as AuthenticatedMinhaContaAlertasRouteImport } from './routes/_authenticated/minha-conta.alertas'
 
 const BuscaRoute = BuscaRouteImport.update({
   id: '/busca',
@@ -58,6 +59,12 @@ const AuthenticatedMinhaContaFavoritosRoute =
     path: '/favoritos',
     getParentRoute: () => AuthenticatedMinhaContaRoute,
   } as any)
+const AuthenticatedMinhaContaAlertasRoute =
+  AuthenticatedMinhaContaAlertasRouteImport.update({
+    id: '/alertas',
+    path: '/alertas',
+    getParentRoute: () => AuthenticatedMinhaContaRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
 }
 export interface FileRoutesById {
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/_authenticated/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/_authenticated/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/minha-conta/alertas'
     | '/minha-conta/favoritos'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/minha-conta/alertas'
     | '/minha-conta/favoritos'
   id:
     | '__root__'
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/_authenticated/minha-conta/alertas'
     | '/_authenticated/minha-conta/favoritos'
   fileRoutesById: FileRoutesById
 }
@@ -186,15 +199,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhaContaFavoritosRouteImport
       parentRoute: typeof AuthenticatedMinhaContaRoute
     }
+    '/_authenticated/minha-conta/alertas': {
+      id: '/_authenticated/minha-conta/alertas'
+      path: '/alertas'
+      fullPath: '/minha-conta/alertas'
+      preLoaderRoute: typeof AuthenticatedMinhaContaAlertasRouteImport
+      parentRoute: typeof AuthenticatedMinhaContaRoute
+    }
   }
 }
 
 interface AuthenticatedMinhaContaRouteChildren {
+  AuthenticatedMinhaContaAlertasRoute: typeof AuthenticatedMinhaContaAlertasRoute
   AuthenticatedMinhaContaFavoritosRoute: typeof AuthenticatedMinhaContaFavoritosRoute
 }
 
 const AuthenticatedMinhaContaRouteChildren: AuthenticatedMinhaContaRouteChildren =
   {
+    AuthenticatedMinhaContaAlertasRoute: AuthenticatedMinhaContaAlertasRoute,
     AuthenticatedMinhaContaFavoritosRoute:
       AuthenticatedMinhaContaFavoritosRoute,
   }
