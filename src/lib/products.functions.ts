@@ -624,3 +624,90 @@ export const adminListMerchants = createServerFn({ method: "GET" })
       };
     });
   });
+
+// ------------ STORE DETAIL (public) ------------
+export const getStoreBySlug = createServerFn({ method: "GET" })
+  .inputValidator((raw: unknown) =>
+    z.object({
+      slug: z.string().min(1).max(120),
+      sort: z.enum(["price_asc", "price_desc", "recent"]).default("price_asc"),
+      page: z.number().int().min(1).max(200).default(1),
+    }).parse(raw),
+  )
+  .handler(async ({ data }) => {
+    const sb = makePublicClient();
+    const PAGE_SIZE = 24;
+
+    const { data: store } = await sb
+      .from("stores")
+      .select("id, slug, name, logo_url, description, trust_score, status")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (!store) return null;
+
+    // All offers of this store
+    const { data: storeOffers, count } = await sb
+      .from("offers")
+      .select("product_id, price_cents, updated_at", { count: "exact" })
+      .eq("store_id", store.id)
+      .order("updated_at", { ascending: false });
+
+    // Best price per product for this store
+    const bestByProduct = new Map<string, { price_cents: number; updated_at: string }>();
+    for (const o of storeOffers ?? []) {
+      const cur = bestByProduct.get(o.product_id);
+      if (!cur || o.price_cents < cur.price_cents) {
+        bestByProduct.set(o.product_id, { price_cents: o.price_cents, updated_at: o.updated_at });
+      }
+    }
+
+    let productIds = [...bestByProduct.keys()];
+
+    // Sort
+    if (data.sort === "price_asc") {
+      productIds.sort((a, b) => bestByProduct.get(a)!.price_cents - bestByProduct.get(b)!.price_cents);
+    } else if (data.sort === "price_desc") {
+      productIds.sort((a, b) => bestByProduct.get(b)!.price_cents - bestByProduct.get(a)!.price_cents);
+    } else {
+      productIds.sort((a, b) =>
+        bestByProduct.get(a)!.updated_at < bestByProduct.get(b)!.updated_at ? 1 : -1,
+      );
+    }
+
+    const total = productIds.length;
+    const from = (data.page - 1) * PAGE_SIZE;
+    const pageIds = productIds.slice(from, from + PAGE_SIZE);
+
+    const { data: prods } = pageIds.length
+      ? await sb
+          .from("products")
+          .select("id, slug, name, brand, image_url")
+          .in("id", pageIds)
+      : { data: [] as { id: string; slug: string; name: string; brand: string | null; image_url: string | null }[] };
+
+    const prodMap = new Map(prods?.map((p) => [p.id, p]) ?? []);
+    const items = pageIds
+      .map((id) => {
+        const p = prodMap.get(id);
+        if (!p) return null;
+        return {
+          id: p.id,
+          slug: p.slug,
+          name: p.name,
+          brand: p.brand,
+          image_url: p.image_url,
+          best_price_cents: bestByProduct.get(id)!.price_cents,
+          offer_count: 1,
+        };
+      })
+      .filter((x): x is NonNullable<typeof x> => x != null);
+
+    return {
+      store,
+      items,
+      total,
+      offers_total: count ?? (storeOffers?.length ?? 0),
+      page: data.page,
+      pageSize: PAGE_SIZE,
+    };
+  });
