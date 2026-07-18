@@ -22,6 +22,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as ApiPublicTrackRouteImport } from './routes/api/public/track'
 import { Route as AuthenticatedMinhaContaFavoritosRouteImport } from './routes/_authenticated/minha-conta.favoritos'
 import { Route as AuthenticatedMinhaContaAlertasRouteImport } from './routes/_authenticated/minha-conta.alertas'
+import { Route as AuthenticatedLojistaAssinaturaRouteImport } from './routes/_authenticated/lojista.assinatura'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -89,6 +90,12 @@ const AuthenticatedMinhaContaAlertasRoute =
     path: '/alertas',
     getParentRoute: () => AuthenticatedMinhaContaRoute,
   } as any)
+const AuthenticatedLojistaAssinaturaRoute =
+  AuthenticatedLojistaAssinaturaRouteImport.update({
+    id: '/assinatura',
+    path: '/assinatura',
+    getParentRoute: () => AuthenticatedLojistaRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,10 +103,11 @@ export interface FileRoutesByFullPath {
   '/busca': typeof BuscaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/lojista': typeof AuthenticatedLojistaRoute
+  '/lojista': typeof AuthenticatedLojistaRouteWithChildren
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
   '/api/public/track': typeof ApiPublicTrackRoute
@@ -110,10 +118,11 @@ export interface FileRoutesByTo {
   '/busca': typeof BuscaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRoute
-  '/lojista': typeof AuthenticatedLojistaRoute
+  '/lojista': typeof AuthenticatedLojistaRouteWithChildren
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
   '/api/public/track': typeof ApiPublicTrackRoute
@@ -126,10 +135,11 @@ export interface FileRoutesById {
   '/busca': typeof BuscaRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/lojista': typeof AuthenticatedLojistaRoute
+  '/_authenticated/lojista': typeof AuthenticatedLojistaRouteWithChildren
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/_authenticated/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/_authenticated/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/_authenticated/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
   '/api/public/track': typeof ApiPublicTrackRoute
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/lojista/assinatura'
     | '/minha-conta/alertas'
     | '/minha-conta/favoritos'
     | '/api/public/track'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/lojista/assinatura'
     | '/minha-conta/alertas'
     | '/minha-conta/favoritos'
     | '/api/public/track'
@@ -175,6 +187,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/_authenticated/lojista/assinatura'
     | '/_authenticated/minha-conta/alertas'
     | '/_authenticated/minha-conta/favoritos'
     | '/api/public/track'
@@ -284,8 +297,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhaContaAlertasRouteImport
       parentRoute: typeof AuthenticatedMinhaContaRoute
     }
+    '/_authenticated/lojista/assinatura': {
+      id: '/_authenticated/lojista/assinatura'
+      path: '/assinatura'
+      fullPath: '/lojista/assinatura'
+      preLoaderRoute: typeof AuthenticatedLojistaAssinaturaRouteImport
+      parentRoute: typeof AuthenticatedLojistaRoute
+    }
   }
 }
+
+interface AuthenticatedLojistaRouteChildren {
+  AuthenticatedLojistaAssinaturaRoute: typeof AuthenticatedLojistaAssinaturaRoute
+}
+
+const AuthenticatedLojistaRouteChildren: AuthenticatedLojistaRouteChildren = {
+  AuthenticatedLojistaAssinaturaRoute: AuthenticatedLojistaAssinaturaRoute,
+}
+
+const AuthenticatedLojistaRouteWithChildren =
+  AuthenticatedLojistaRoute._addFileChildren(AuthenticatedLojistaRouteChildren)
 
 interface AuthenticatedMinhaContaRouteChildren {
   AuthenticatedMinhaContaAlertasRoute: typeof AuthenticatedMinhaContaAlertasRoute
@@ -306,13 +337,13 @@ const AuthenticatedMinhaContaRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRoute
+  AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRouteWithChildren
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedLojistaRoute: AuthenticatedLojistaRoute,
+  AuthenticatedLojistaRoute: AuthenticatedLojistaRouteWithChildren,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRouteWithChildren,
 }
 
