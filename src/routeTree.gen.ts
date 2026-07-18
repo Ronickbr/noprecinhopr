@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as CategoriaSlugRouteImport } from './routes/categoria.$slug'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
+import { Route as AuthenticatedMinhaContaFavoritosRouteImport } from './routes/_authenticated/minha-conta.favoritos'
 
 const BuscaRoute = BuscaRouteImport.update({
   id: '/busca',
@@ -51,22 +52,30 @@ const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
   path: '/minha-conta',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedMinhaContaFavoritosRoute =
+  AuthenticatedMinhaContaFavoritosRouteImport.update({
+    id: '/favoritos',
+    path: '/favoritos',
+    getParentRoute: () => AuthenticatedMinhaContaRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
-  '/minha-conta': typeof AuthenticatedMinhaContaRoute
+  '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
-  '/minha-conta': typeof AuthenticatedMinhaContaRoute
+  '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -74,9 +83,10 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
-  '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRoute
+  '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
+  '/_authenticated/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/minha-conta/favoritos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/minha-conta/favoritos'
   id:
     | '__root__'
     | '/'
@@ -104,6 +116,7 @@ export interface FileRouteTypes {
     | '/_authenticated/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
+    | '/_authenticated/minha-conta/favoritos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -166,15 +179,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/minha-conta/favoritos': {
+      id: '/_authenticated/minha-conta/favoritos'
+      path: '/favoritos'
+      fullPath: '/minha-conta/favoritos'
+      preLoaderRoute: typeof AuthenticatedMinhaContaFavoritosRouteImport
+      parentRoute: typeof AuthenticatedMinhaContaRoute
+    }
   }
 }
 
+interface AuthenticatedMinhaContaRouteChildren {
+  AuthenticatedMinhaContaFavoritosRoute: typeof AuthenticatedMinhaContaFavoritosRoute
+}
+
+const AuthenticatedMinhaContaRouteChildren: AuthenticatedMinhaContaRouteChildren =
+  {
+    AuthenticatedMinhaContaFavoritosRoute:
+      AuthenticatedMinhaContaFavoritosRoute,
+  }
+
+const AuthenticatedMinhaContaRouteWithChildren =
+  AuthenticatedMinhaContaRoute._addFileChildren(
+    AuthenticatedMinhaContaRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRoute
+  AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRoute,
+  AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
