@@ -407,15 +407,23 @@ export const uploadCatalog = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!store) throw new Error("Cadastre sua loja antes de enviar o catálogo.");
 
-    // Enforce max_products limit
-    const maxProducts = (sub.plan as { max_products: number | null } | null)?.max_products ?? null;
+    // Enforce max_products limit. Trial is capped at Starter (50 products) regardless of plan.
+    const TRIAL_CAP = 50;
+    const planMax = (sub.plan as { max_products: number | null } | null)?.max_products ?? null;
+    const maxProducts = trialOk
+      ? planMax == null ? TRIAL_CAP : Math.min(planMax, TRIAL_CAP)
+      : planMax;
     if (maxProducts !== null) {
       const { count: current } = await context.supabase
         .from("offers")
         .select("id", { count: "exact", head: true })
         .eq("store_id", store.id);
       if ((current ?? 0) + data.rows.length > maxProducts) {
-        throw new Error(`Seu plano permite até ${maxProducts} produtos ativos. Faça upgrade para enviar mais.`);
+        throw new Error(
+          trialOk
+            ? `Modo trial permite até ${maxProducts} produtos (igual ao plano Starter). Assine um plano para enviar mais.`
+            : `Seu plano permite até ${maxProducts} produtos ativos. Faça upgrade para enviar mais.`,
+        );
       }
     }
 
