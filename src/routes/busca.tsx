@@ -115,7 +115,7 @@ function SearchPage() {
           </p>
           <select
             value={search.sort}
-            onChange={(e) => navigate({ to: "/busca", search: { ...search, sort: e.target.value as typeof search.sort } })}
+            onChange={(e) => update({ sort: e.target.value as typeof search.sort })}
             className="h-9 px-3 rounded border border-input bg-card text-sm"
           >
             <option value="price_asc">Menor preço</option>
