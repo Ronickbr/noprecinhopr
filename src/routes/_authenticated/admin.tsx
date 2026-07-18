@@ -46,8 +46,18 @@ function AdminPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
-      <h1 className="font-serif text-3xl font-semibold text-foreground">Administração de lojas</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Aprove ou suspenda lojas cadastradas.</p>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">Administração de lojas</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Aprove ou suspenda lojas cadastradas.</p>
+        </div>
+        <a
+          href="/admin/lojistas"
+          className="text-xs font-mono uppercase tracking-widest text-primary hover:underline"
+        >
+          Monitorar lojistas →
+        </a>
+      </div>
       <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted text-left">
