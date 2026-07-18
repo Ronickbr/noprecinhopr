@@ -155,15 +155,30 @@ function ProductPage() {
         <div className="mt-4 divide-y divide-border border border-border rounded-lg bg-card">
           {offers.map((o, i) => (
             <div key={o.id} className="flex items-center gap-4 p-4">
-              <div className="w-12 h-12 rounded bg-muted flex items-center justify-center shrink-0">
+              <Link
+                to="/loja/$slug"
+                params={{ slug: o.store?.slug ?? "" }}
+                disabled={!o.store?.slug}
+                className="w-12 h-12 rounded bg-muted flex items-center justify-center shrink-0 hover:ring-2 hover:ring-primary/40 transition"
+              >
                 {o.store?.logo_url ? (
                   <img src={o.store.logo_url} alt={o.store.name} className="w-10 h-10 object-contain" />
                 ) : (
                   <Store className="h-5 w-5 text-muted-foreground" />
                 )}
-              </div>
+              </Link>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">{o.store?.name ?? "Loja"}</p>
+                {o.store?.slug ? (
+                  <Link
+                    to="/loja/$slug"
+                    params={{ slug: o.store.slug }}
+                    className="font-medium text-foreground truncate hover:text-primary transition-colors"
+                  >
+                    {o.store.name}
+                  </Link>
+                ) : (
+                  <p className="font-medium text-foreground truncate">Loja</p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Confiança {Number(o.store?.trust_score ?? 0).toFixed(1)}/5 · atualizado {new Date(o.updated_at).toLocaleDateString("pt-BR")}
                 </p>
