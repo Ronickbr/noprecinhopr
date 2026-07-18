@@ -131,7 +131,7 @@ function StorePage() {
           <button
             type="button"
             disabled={page <= 1}
-            onClick={() => navigate({ search: (prev) => ({ ...prev, page: page - 1 }) })}
+            onClick={() => navigate({ search: { sort, page: page - 1 } })}
             className="h-9 px-3 rounded-md border border-border bg-card text-sm disabled:opacity-40"
           >
             Anterior
