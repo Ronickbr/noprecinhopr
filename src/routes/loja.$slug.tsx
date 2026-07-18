@@ -101,7 +101,7 @@ function StorePage() {
           value={sort}
           onChange={(e) =>
             navigate({
-              search: (prev) => ({ ...prev, sort: e.target.value as typeof sort, page: 1 }),
+              search: { sort: e.target.value as typeof sort, page: 1 },
             })
           }
           className="h-9 rounded-md border border-border bg-card px-3 text-sm"
