@@ -72,20 +72,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PrecinhoBom — compare preços em milhares de lojas" },
+      { title: "PrecinhoBom — o menor preço, com histórico e alertas" },
       {
         name: "description",
         content:
-          "Comparador de preços independente. Encontre o menor preço, histórico de 90 dias e alertas para milhões de produtos.",
+          "Compare preços de milhares de lojas em um lugar só. Histórico de 90 dias, alertas de queda e curadoria independente.",
       },
       { name: "author", content: "PrecinhoBom" },
-      { property: "og:title", content: "PrecinhoBom — compare preços em milhares de lojas" },
+      { property: "og:title", content: "PrecinhoBom — o menor preço, com histórico e alertas" },
       {
         property: "og:description",
-        content: "Encontre o menor preço, histórico e alertas para milhões de produtos.",
+        content: "Compare preços de milhares de lojas em um lugar só. Histórico de 90 dias, alertas de queda e curadoria independente.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "PrecinhoBom — o menor preço, com histórico e alertas" },
+      { name: "twitter:description", content: "Compare preços de milhares de lojas em um lugar só. Histórico de 90 dias, alertas de queda e curadoria independente." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/71dba218-1673-40a2-b91e-df43c9b81294/id-preview-2f3049be--63f664ad-d877-481a-a938-00f61af20f62.lovable.app-1784347090793.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/71dba218-1673-40a2-b91e-df43c9b81294/id-preview-2f3049be--63f664ad-d877-481a-a938-00f61af20f62.lovable.app-1784347090793.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
