@@ -831,13 +831,13 @@ export const adminSetSubscription = createServerFn({ method: "POST" })
       .eq("user_id", data.user_id)
       .maybeSingle();
 
-    const payload: Record<string, unknown> = {
+    const payload = {
       status: data.status,
       canceled_at: data.status === "canceled" ? now.toISOString() : null,
       current_period_end: data.status === "active" ? periodEnd : null,
       trial_ends_at: data.status === "trialing" ? trialEnd : null,
+      ...(data.plan_id ? { plan_id: data.plan_id } : {}),
     };
-    if (data.plan_id) payload.plan_id = data.plan_id;
 
     if (existing) {
       const { error } = await supabaseAdmin.from("merchant_subscriptions").update(payload).eq("id", existing.id);
