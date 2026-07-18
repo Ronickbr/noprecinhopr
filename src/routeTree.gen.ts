@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as CategoriaSlugRouteImport } from './routes/categoria.$slug'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
+import { Route as AuthenticatedLojistaRouteImport } from './routes/_authenticated/lojista'
 import { Route as AuthenticatedMinhaContaFavoritosRouteImport } from './routes/_authenticated/minha-conta.favoritos'
 import { Route as AuthenticatedMinhaContaAlertasRouteImport } from './routes/_authenticated/minha-conta.alertas'
 
@@ -53,6 +54,11 @@ const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
   path: '/minha-conta',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLojistaRoute = AuthenticatedLojistaRouteImport.update({
+  id: '/lojista',
+  path: '/lojista',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMinhaContaFavoritosRoute =
   AuthenticatedMinhaContaFavoritosRouteImport.update({
     id: '/favoritos',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
+  '/lojista': typeof AuthenticatedLojistaRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
+  '/lojista': typeof AuthenticatedLojistaRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
+  '/_authenticated/lojista': typeof AuthenticatedLojistaRoute
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/busca'
+    | '/lojista'
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/busca'
+    | '/lojista'
     | '/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/busca'
+    | '/_authenticated/lojista'
     | '/_authenticated/minha-conta'
     | '/categoria/$slug'
     | '/produto/$slug'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lojista': {
+      id: '/_authenticated/lojista'
+      path: '/lojista'
+      fullPath: '/lojista'
+      preLoaderRoute: typeof AuthenticatedLojistaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/minha-conta/favoritos': {
       id: '/_authenticated/minha-conta/favoritos'
       path: '/favoritos'
@@ -227,10 +246,12 @@ const AuthenticatedMinhaContaRouteWithChildren =
   )
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRoute
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedLojistaRoute: AuthenticatedLojistaRoute,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRouteWithChildren,
 }
 
