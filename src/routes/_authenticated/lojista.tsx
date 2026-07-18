@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Papa from "papaparse";
@@ -9,16 +9,6 @@ import { Upload, Store as StoreIcon, BarChart3 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/lojista")({
   head: () => ({ meta: [{ title: "Painel do lojista — PrecinhoBom" }, { name: "robots", content: "noindex" }] }),
-  beforeLoad: async () => {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) throw redirect({ to: "/auth" });
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", u.user.id)
-      .in("role", ["merchant", "admin"]);
-    if (!data || data.length === 0) throw redirect({ to: "/minha-conta/favoritos" });
-  },
   component: LojistaPage,
 });
 
