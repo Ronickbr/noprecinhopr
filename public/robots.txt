@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /minha-conta/
+Disallow: /lojista
+Disallow: /admin
+Disallow: /auth
