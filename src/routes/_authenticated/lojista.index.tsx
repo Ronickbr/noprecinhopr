@@ -16,13 +16,45 @@ export const Route = createFileRoute("/_authenticated/lojista/")({
 
 function LojistaPage() {
   const [tab, setTab] = useState<"loja" | "catalogo" | "analytics">("loja");
+  const { data: sub } = useQuery({ queryKey: ["my-subscription"], queryFn: () => getMySubscription() });
+  const now = Date.now();
+  const trialOk = sub?.status === "trialing" && sub.trial_ends_at && new Date(sub.trial_ends_at).getTime() > now;
+  const activeOk = sub?.status === "active" && sub.current_period_end && new Date(sub.current_period_end).getTime() > now;
+  const hasAccess = trialOk || activeOk;
 
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
-      <h1 className="font-serif text-3xl font-semibold text-foreground">Painel do lojista</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Cadastre sua loja, envie seu catálogo e acompanhe cliques.
-      </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-serif text-3xl font-semibold text-foreground">Painel do lojista</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Cadastre sua loja, envie seu catálogo e acompanhe cliques.
+          </p>
+        </div>
+        <Link
+          to="/lojista/assinatura"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 h-10 text-sm hover:border-primary/60"
+        >
+          <CreditCard className="h-4 w-4" />
+          {hasAccess ? (sub?.plan?.name ? `Plano: ${sub.plan.name}` : "Minha assinatura") : "Assinar plano"}
+        </Link>
+      </div>
+
+      {!hasAccess ? (
+        <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm flex items-start gap-3">
+          <Lock className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-foreground">Assine um plano para publicar produtos</p>
+            <p className="mt-1 text-muted-foreground">
+              Você pode cadastrar sua loja livremente, mas o envio de catálogo requer plano ativo.{" "}
+              <Link to="/lojista/assinatura" className="text-primary hover:underline">
+                Ver planos (30 dias grátis)
+              </Link>
+            </p>
+          </div>
+        </div>
+      ) : null}
+
 
       <div className="mt-6 flex gap-1 border-b border-border">
         {[
