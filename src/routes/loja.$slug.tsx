@@ -18,7 +18,7 @@ const storeQuery = (slug: string, sort: "price_asc" | "price_desc" | "recent", p
   });
 
 export const Route = createFileRoute("/loja/$slug")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: searchSchema,
   loaderDeps: ({ search }) => ({ sort: search.sort, page: search.page }),
   loader: async ({ params, deps, context }) => {
     const data = await context.queryClient.ensureQueryData(storeQuery(params.slug, deps.sort, deps.page));
