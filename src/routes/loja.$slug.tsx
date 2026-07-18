@@ -58,7 +58,7 @@ export const Route = createFileRoute("/loja/$slug")({
 function StorePage() {
   const { slug } = Route.useParams();
   const { sort, page } = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const navigate = Route.useNavigate();
   const { data } = useSuspenseQuery(storeQuery(slug, sort, page));
   if (!data) return null;
   const { store, items, total, offers_total, pageSize } = data;
