@@ -27,7 +27,7 @@ export const Route = createFileRoute("/busca")({
 
 function SearchPage() {
   const search = Route.useSearch();
-  const navigate = useNavigate();
+  const navigate = Route.useNavigate();
 
   const productsQuery = useQuery({
     queryKey: ["search", search],
