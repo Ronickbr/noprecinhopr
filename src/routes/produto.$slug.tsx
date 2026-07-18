@@ -51,18 +51,15 @@ function ProductPage() {
   const { data } = useSuspenseQuery(productQuery(params.slug));
   const { user } = useUser();
   const qc = useQueryClient();
-  if (!data) return null;
-  const { product, category, offers, history, stats } = data;
 
+  const productId = data?.product.id;
   const favQuery = useQuery({
     queryKey: ["favorites"],
     queryFn: () => listFavorites(),
     enabled: !!user,
   });
-  const isFav = !!favQuery.data?.find((f) => f.product_id === product.id);
-
   const favMut = useMutation({
-    mutationFn: () => toggleFavorite({ data: { productId: product.id } }),
+    mutationFn: () => toggleFavorite({ data: { productId: productId! } }),
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["favorites"] });
       toast.success(r.favorited ? "Adicionado aos favoritos" : "Removido dos favoritos");
@@ -72,13 +69,17 @@ function ProductPage() {
 
   const [alertPrice, setAlertPrice] = useState("");
   const alertMut = useMutation({
-    mutationFn: () => createAlert({ data: { productId: product.id, targetPrice: Number(alertPrice) } }),
+    mutationFn: () => createAlert({ data: { productId: productId!, targetPrice: Number(alertPrice) } }),
     onSuccess: () => {
       toast.success("Alerta criado! Vamos avisar quando o preço cair.");
       setAlertPrice("");
     },
     onError: (e: Error) => toast.error(e.message || "Não foi possível criar o alerta"),
   });
+
+  if (!data) return null;
+  const { product, category, offers, history, stats } = data;
+  const isFav = !!favQuery.data?.find((f) => f.product_id === product.id);
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
