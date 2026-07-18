@@ -303,11 +303,14 @@ export const upsertMyStore = createServerFn({ method: "POST" })
         slug: z.string().trim().min(2).max(60).regex(/^[a-z0-9-]+$/, "Slug inválido"),
         description: z.string().max(500).optional().nullable(),
         logo_url: z.string().url().optional().nullable().or(z.literal("")),
+        banner_url: z.string().url().optional().nullable().or(z.literal("")),
+        secondary_banner_url: z.string().url().optional().nullable().or(z.literal("")),
+        about: z.string().max(4000).optional().nullable(),
+        featured_product_ids: z.array(z.string().uuid()).max(12).optional().nullable(),
       })
       .parse(raw),
   )
   .handler(async ({ data, context }) => {
-    // Grant merchant role
     await context.supabase.from("user_roles").insert({ user_id: context.userId, role: "merchant" }).select();
 
     const { data: existing } = await context.supabase
@@ -316,29 +319,56 @@ export const upsertMyStore = createServerFn({ method: "POST" })
       .eq("owner_user_id", context.userId)
       .maybeSingle();
 
+    const payload = {
+      name: data.name,
+      slug: data.slug,
+      description: data.description ?? null,
+      logo_url: data.logo_url || null,
+      banner_url: data.banner_url || null,
+      secondary_banner_url: data.secondary_banner_url || null,
+      about: data.about ?? null,
+      featured_product_ids: data.featured_product_ids ?? [],
+    };
+
     if (existing) {
-      const { error } = await context.supabase
-        .from("stores")
-        .update({
-          name: data.name,
-          slug: data.slug,
-          description: data.description ?? null,
-          logo_url: data.logo_url || null,
-        })
-        .eq("id", existing.id);
+      const { error } = await context.supabase.from("stores").update(payload).eq("id", existing.id);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await context.supabase.from("stores").insert({
-        name: data.name,
-        slug: data.slug,
-        description: data.description ?? null,
-        logo_url: data.logo_url || null,
+        ...payload,
         owner_user_id: context.userId,
         status: "pending",
       });
       if (error) throw new Error(error.message);
     }
     return { ok: true };
+  });
+
+// List the merchant's own products (to choose featured ones)
+export const listMyStoreProducts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: store } = await context.supabase
+      .from("stores")
+      .select("id")
+      .eq("owner_user_id", context.userId)
+      .maybeSingle();
+    if (!store) return [];
+    const { data: offers } = await context.supabase
+      .from("offers")
+      .select("product_id, price_cents, products(id, slug, name, brand, image_url)")
+      .eq("store_id", store.id)
+      .order("updated_at", { ascending: false })
+      .limit(300);
+    const seen = new Set<string>();
+    const items: Array<{ id: string; slug: string; name: string; brand: string | null; image_url: string | null; price_cents: number }> = [];
+    for (const o of offers ?? []) {
+      const p = (o as { products: { id: string; slug: string; name: string; brand: string | null; image_url: string | null } | null }).products;
+      if (!p || seen.has(p.id)) continue;
+      seen.add(p.id);
+      items.push({ ...p, price_cents: (o as { price_cents: number }).price_cents });
+    }
+    return items;
   });
 
 const catalogRow = z.object({
