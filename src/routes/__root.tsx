@@ -88,8 +88,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "PrecinhoBom — o menor preço, com histórico e alertas" },
       { name: "twitter:description", content: "Compare preços de milhares de lojas em um lugar só. Histórico de 90 dias, alertas de queda e curadoria independente." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/71dba218-1673-40a2-b91e-df43c9b81294/id-preview-2f3049be--63f664ad-d877-481a-a938-00f61af20f62.lovable.app-1784347090793.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/71dba218-1673-40a2-b91e-df43c9b81294/id-preview-2f3049be--63f664ad-d877-481a-a938-00f61af20f62.lovable.app-1784347090793.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
