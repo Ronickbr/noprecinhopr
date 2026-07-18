@@ -770,10 +770,119 @@ export const getStoreBySlug = createServerFn({ method: "GET" })
 
     return {
       store,
+      featured,
       items,
       total,
       offers_total: count ?? (storeOffers?.length ?? 0),
       page: data.page,
       pageSize: PAGE_SIZE,
     };
+  });
+
+// ------------ ADMIN: extra actions ------------
+export const adminDeleteStore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("stores").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSetTrustScore = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({ id: z.string().uuid(), trust_score: z.number().min(0).max(5) }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { error } = await context.supabase
+      .from("stores")
+      .update({ trust_score: data.trust_score })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const adminSetSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({
+      user_id: z.string().uuid(),
+      plan_id: z.string().uuid().nullable(),
+      status: z.enum(["trialing", "active", "canceled", "past_due", "expired"]),
+    }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const now = new Date();
+    const periodEnd = new Date(now.getTime() + 30 * 86400_000).toISOString();
+    const trialEnd = new Date(now.getTime() + 30 * 86400_000).toISOString();
+
+    const { data: existing } = await supabaseAdmin
+      .from("merchant_subscriptions")
+      .select("id")
+      .eq("user_id", data.user_id)
+      .maybeSingle();
+
+    const payload: Record<string, unknown> = {
+      status: data.status,
+      canceled_at: data.status === "canceled" ? now.toISOString() : null,
+      current_period_end: data.status === "active" ? periodEnd : null,
+      trial_ends_at: data.status === "trialing" ? trialEnd : null,
+    };
+    if (data.plan_id) payload.plan_id = data.plan_id;
+
+    if (existing) {
+      const { error } = await supabaseAdmin.from("merchant_subscriptions").update(payload).eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    } else if (data.plan_id) {
+      const { error } = await supabaseAdmin
+        .from("merchant_subscriptions")
+        .insert({ user_id: data.user_id, plan_id: data.plan_id, ...payload });
+      if (error) throw new Error(error.message);
+    } else {
+      throw new Error("Selecione um plano para criar a assinatura.");
+    }
+    return { ok: true };
+  });
+
+export const adminGrantRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({
+      user_id: z.string().uuid(),
+      role: z.enum(["admin", "merchant", "user"]),
+      action: z.enum(["grant", "revoke"]),
+    }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.action === "grant") {
+      await supabaseAdmin.from("user_roles").insert({ user_id: data.user_id, role: data.role });
+    } else {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", data.user_id).eq("role", data.role);
+    }
+    return { ok: true };
+  });
+
+export const listMerchantPlansForAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { data } = await context.supabase
+      .from("merchant_plans")
+      .select("id, slug, name, price_cents, max_products")
+      .eq("is_active", true)
+      .order("sort_order");
+    return data ?? [];
   });
