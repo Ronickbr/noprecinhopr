@@ -357,12 +357,38 @@ export const uploadCatalog = createServerFn({ method: "POST" })
     z.object({ rows: z.array(catalogRow).min(1).max(500) }).parse(raw),
   )
   .handler(async ({ data, context }) => {
+    // Require active subscription (trialing or active)
+    const { data: sub } = await context.supabase
+      .from("merchant_subscriptions")
+      .select("status, trial_ends_at, current_period_end, plan:merchant_plans(max_products)")
+      .eq("user_id", context.userId)
+      .maybeSingle();
+    const now = Date.now();
+    const trialOk = sub?.status === "trialing" && sub.trial_ends_at && new Date(sub.trial_ends_at).getTime() > now;
+    const activeOk = sub?.status === "active" && sub.current_period_end && new Date(sub.current_period_end).getTime() > now;
+    if (!sub || (!trialOk && !activeOk)) {
+      throw new Error("Assine um plano para enviar seu catálogo. Vá em Painel do lojista → Assinatura.");
+    }
+
     const { data: store } = await context.supabase
       .from("stores")
       .select("id, status")
       .eq("owner_user_id", context.userId)
       .maybeSingle();
     if (!store) throw new Error("Cadastre sua loja antes de enviar o catálogo.");
+
+    // Enforce max_products limit
+    const maxProducts = (sub.plan as { max_products: number | null } | null)?.max_products ?? null;
+    if (maxProducts !== null) {
+      const { count: current } = await context.supabase
+        .from("offers")
+        .select("id", { count: "exact", head: true })
+        .eq("store_id", store.id);
+      if ((current ?? 0) + data.rows.length > maxProducts) {
+        throw new Error(`Seu plano permite até ${maxProducts} produtos ativos. Faça upgrade para enviar mais.`);
+      }
+    }
+
 
     const { data: cats } = await context.supabase.from("categories").select("id, slug");
     const catMap = new Map((cats ?? []).map((c) => [c.slug, c.id]));
