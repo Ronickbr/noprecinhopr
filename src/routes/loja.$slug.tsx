@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-ro
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
+
 import { Store as StoreIcon, ShieldCheck } from "lucide-react";
 import { getStoreBySlug } from "@/lib/products.functions";
 import { ProductCard } from "@/components/product-card";
