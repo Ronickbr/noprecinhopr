@@ -139,6 +139,7 @@ function RootComponent() {
           <Outlet />
         </main>
         <SiteFooter />
+        <Toaster position="bottom-right" richColors closeButton />
       </div>
     </QueryClientProvider>
   );
