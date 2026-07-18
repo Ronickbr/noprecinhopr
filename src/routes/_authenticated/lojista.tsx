@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Papa from "papaparse";
 import { toast } from "sonner";
 import { getMyStore, upsertMyStore, uploadCatalog, getStoreAnalytics } from "@/lib/products.functions";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Upload, Store as StoreIcon, BarChart3 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/lojista")({
