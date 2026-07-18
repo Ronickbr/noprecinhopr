@@ -1,13 +1,23 @@
 import { Link } from "@tanstack/react-router";
-import { Search, User as UserIcon, Heart, Bell, Store } from "lucide-react";
+import { Search, User as UserIcon, Heart, Bell, Store, Shield, LogOut } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useUser } from "@/hooks/use-user";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function SiteHeader() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
-  const { user } = useUser();
+  const { user, isAdmin, isMerchant, primaryRole } = useUser();
+
+  async function handleSignOut() {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
@@ -42,36 +52,62 @@ export function SiteHeader() {
         <nav className="hidden sm:flex items-center gap-1 text-sm">
           {user ? (
             <>
-              <Link
-                to="/minha-conta/favoritos"
-                className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                title="Favoritos"
+              {isAdmin ? (
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-mono uppercase tracking-widest text-primary hover:bg-accent transition-colors"
+                  title="Painel admin"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  Admin
+                </Link>
+              ) : null}
+              {isMerchant && !isAdmin ? (
+                <Link
+                  to="/lojista"
+                  className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-xs font-mono uppercase tracking-widest text-primary hover:bg-accent transition-colors"
+                  title="Painel do lojista"
+                >
+                  <Store className="h-3.5 w-3.5" />
+                  Lojista
+                </Link>
+              ) : null}
+              {primaryRole === "user" ? (
+                <>
+                  <Link
+                    to="/minha-conta/favoritos"
+                    className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                    title="Favoritos"
+                  >
+                    <Heart className="h-4 w-4" />
+                  </Link>
+                  <Link
+                    to="/minha-conta/alertas"
+                    className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                    title="Alertas de preço"
+                  >
+                    <Bell className="h-4 w-4" />
+                  </Link>
+                </>
+              ) : null}
+              <button
+                onClick={handleSignOut}
+                className="ml-1 inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-sm font-semibold text-foreground border border-border hover:bg-accent transition"
+                title="Sair"
               >
-                <Heart className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/minha-conta/alertas"
-                className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                title="Alertas de preço"
-              >
-                <Bell className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/lojista"
-                className="p-2 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                title="Painel do lojista"
-              >
-                <Store className="h-4 w-4" />
-              </Link>
+                <LogOut className="h-3.5 w-3.5" />
+                Sair
+              </button>
             </>
-          ) : null}
-          <Link
-            to="/auth"
-            className="ml-1 inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-sm font-semibold text-primary-foreground bg-primary hover:opacity-90 transition"
-          >
-            <UserIcon className="h-3.5 w-3.5" />
-            {user ? "Conta" : "Entrar"}
-          </Link>
+          ) : (
+            <Link
+              to="/auth"
+              className="ml-1 inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-sm font-semibold text-primary-foreground bg-primary hover:opacity-90 transition"
+            >
+              <UserIcon className="h-3.5 w-3.5" />
+              Entrar
+            </Link>
+          )}
         </nav>
       </div>
     </header>
