@@ -48,11 +48,12 @@ function StoreForm() {
   const qc = useQueryClient();
   const { data: store } = useQuery({ queryKey: ["my-store"], queryFn: () => getMyStore() });
   const [form, setForm] = useState({ name: "", slug: "", description: "", logo_url: "" });
-  const initialized = useRef(false);
-  if (store && !initialized.current) {
-    setForm({ name: store.name, slug: store.slug, description: store.description ?? "", logo_url: store.logo_url ?? "" });
-    initialized.current = true;
-  }
+  useEffect(() => {
+    if (store) {
+      setForm({ name: store.name, slug: store.slug, description: store.description ?? "", logo_url: store.logo_url ?? "" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store?.id]);
 
   const save = useMutation({
     mutationFn: () => upsertMyStore({ data: form }),
