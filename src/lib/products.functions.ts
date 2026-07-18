@@ -510,3 +510,117 @@ export const adminSetStoreStatus = createServerFn({ method: "POST" })
     await context.supabase.from("stores").update({ status: data.status }).eq("id", data.id);
     return { ok: true };
   });
+
+// ------------ ADMIN: monitor merchants ------------
+export const adminListMerchants = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: stores } = await supabaseAdmin
+      .from("stores")
+      .select("id, slug, name, status, trust_score, created_at, owner_user_id")
+      .order("created_at", { ascending: false });
+
+    const ownerIds = [
+      ...new Set((stores ?? []).map((s) => s.owner_user_id).filter(Boolean)),
+    ] as string[];
+
+    const [profilesRes, subsRes, plansRes] = await Promise.all([
+      ownerIds.length
+        ? supabaseAdmin.from("profiles").select("id, display_name").in("id", ownerIds)
+        : Promise.resolve({ data: [] as { id: string; display_name: string | null }[] }),
+      ownerIds.length
+        ? supabaseAdmin
+            .from("merchant_subscriptions")
+            .select("user_id, plan_id, status, trial_ends_at, current_period_end, canceled_at")
+            .in("user_id", ownerIds)
+        : Promise.resolve({
+            data: [] as Array<{
+              user_id: string;
+              plan_id: string;
+              status: string;
+              trial_ends_at: string | null;
+              current_period_end: string | null;
+              canceled_at: string | null;
+            }>,
+          }),
+      supabaseAdmin.from("merchant_plans").select("id, slug, name, price_cents, max_products"),
+    ]);
+
+    const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
+    const subMap = new Map((subsRes.data ?? []).map((s) => [s.user_id, s]));
+    const planMap = new Map((plansRes.data ?? []).map((p) => [p.id, p]));
+
+    const storeIds = (stores ?? []).map((s) => s.id);
+    const offerCounts = new Map<string, number>();
+    const clickCounts = new Map<string, number>();
+
+    if (storeIds.length) {
+      const { data: offers } = await supabaseAdmin
+        .from("offers")
+        .select("id, store_id")
+        .in("store_id", storeIds);
+      for (const o of offers ?? []) {
+        offerCounts.set(o.store_id, (offerCounts.get(o.store_id) ?? 0) + 1);
+      }
+      const offerIds = (offers ?? []).map((o) => o.id);
+      if (offerIds.length) {
+        const since = new Date(Date.now() - 30 * 86400e3).toISOString();
+        const { data: clicks } = await supabaseAdmin
+          .from("clicks")
+          .select("offer_id")
+          .in("offer_id", offerIds)
+          .gte("created_at", since);
+        const offerToStore = new Map((offers ?? []).map((o) => [o.id, o.store_id]));
+        for (const c of clicks ?? []) {
+          const sid = offerToStore.get(c.offer_id);
+          if (!sid) continue;
+          clickCounts.set(sid, (clickCounts.get(sid) ?? 0) + 1);
+        }
+      }
+    }
+
+    return (stores ?? []).map((s) => {
+      const sub = s.owner_user_id ? subMap.get(s.owner_user_id) : null;
+      const plan = sub ? planMap.get(sub.plan_id) : null;
+      return {
+        id: s.id,
+        slug: s.slug,
+        name: s.name,
+        status: s.status,
+        trust_score: Number(s.trust_score),
+        created_at: s.created_at,
+        owner: s.owner_user_id
+          ? {
+              id: s.owner_user_id,
+              display_name: profileMap.get(s.owner_user_id)?.display_name ?? null,
+            }
+          : null,
+        subscription: sub
+          ? {
+              status: sub.status,
+              trial_ends_at: sub.trial_ends_at,
+              current_period_end: sub.current_period_end,
+              canceled_at: sub.canceled_at,
+              plan: plan
+                ? {
+                    slug: plan.slug,
+                    name: plan.name,
+                    price_cents: plan.price_cents,
+                    max_products: plan.max_products,
+                  }
+                : null,
+            }
+          : null,
+        offers_count: offerCounts.get(s.id) ?? 0,
+        clicks_30d: clickCounts.get(s.id) ?? 0,
+      };
+    });
+  });
