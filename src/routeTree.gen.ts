@@ -26,10 +26,21 @@ import { Route as AuthenticatedMinhaContaFavoritosRouteImport } from './routes/_
 import { Route as AuthenticatedMinhaContaAlertasRouteImport } from './routes/_authenticated/minha-conta.alertas'
 import { Route as AuthenticatedLojistaAssinaturaRouteImport } from './routes/_authenticated/lojista.assinatura'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminSubcategoriasRouteImport } from './routes/_authenticated/admin.subcategorias'
+import { Route as AuthenticatedAdminSolicitacoesRouteImport } from './routes/_authenticated/admin.solicitacoes'
+import { Route as AuthenticatedAdminRelatoriosRouteImport } from './routes/_authenticated/admin.relatorios'
+import { Route as AuthenticatedAdminRegioesRouteImport } from './routes/_authenticated/admin.regioes'
 import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated/admin.produtos'
 import { Route as AuthenticatedAdminPlanosRouteImport } from './routes/_authenticated/admin.planos'
+import { Route as AuthenticatedAdminPermissoesRouteImport } from './routes/_authenticated/admin.permissoes'
+import { Route as AuthenticatedAdminOfertasRouteImport } from './routes/_authenticated/admin.ofertas'
+import { Route as AuthenticatedAdminMarcasRouteImport } from './routes/_authenticated/admin.marcas'
 import { Route as AuthenticatedAdminLojistasRouteImport } from './routes/_authenticated/admin.lojistas'
 import { Route as AuthenticatedAdminLojasRouteImport } from './routes/_authenticated/admin.lojas'
+import { Route as AuthenticatedAdminLogsRouteImport } from './routes/_authenticated/admin.logs'
+import { Route as AuthenticatedAdminFinanceiroRouteImport } from './routes/_authenticated/admin.financeiro'
+import { Route as AuthenticatedAdminDenunciasRouteImport } from './routes/_authenticated/admin.denuncias'
+import { Route as AuthenticatedAdminConfiguracoesRouteImport } from './routes/_authenticated/admin.configuracoes'
 import { Route as AuthenticatedAdminCategoriasRouteImport } from './routes/_authenticated/admin.categorias'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -121,6 +132,30 @@ const AuthenticatedAdminUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminSubcategoriasRoute =
+  AuthenticatedAdminSubcategoriasRouteImport.update({
+    id: '/subcategorias',
+    path: '/subcategorias',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSolicitacoesRoute =
+  AuthenticatedAdminSolicitacoesRouteImport.update({
+    id: '/solicitacoes',
+    path: '/solicitacoes',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminRelatoriosRoute =
+  AuthenticatedAdminRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminRegioesRoute =
+  AuthenticatedAdminRegioesRouteImport.update({
+    id: '/regioes',
+    path: '/regioes',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminProdutosRoute =
   AuthenticatedAdminProdutosRouteImport.update({
     id: '/produtos',
@@ -131,6 +166,24 @@ const AuthenticatedAdminPlanosRoute =
   AuthenticatedAdminPlanosRouteImport.update({
     id: '/planos',
     path: '/planos',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminPermissoesRoute =
+  AuthenticatedAdminPermissoesRouteImport.update({
+    id: '/permissoes',
+    path: '/permissoes',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminOfertasRoute =
+  AuthenticatedAdminOfertasRouteImport.update({
+    id: '/ofertas',
+    path: '/ofertas',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminMarcasRoute =
+  AuthenticatedAdminMarcasRouteImport.update({
+    id: '/marcas',
+    path: '/marcas',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 const AuthenticatedAdminLojistasRoute =
@@ -144,6 +197,29 @@ const AuthenticatedAdminLojasRoute = AuthenticatedAdminLojasRouteImport.update({
   path: '/lojas',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminLogsRoute = AuthenticatedAdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminFinanceiroRoute =
+  AuthenticatedAdminFinanceiroRouteImport.update({
+    id: '/financeiro',
+    path: '/financeiro',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminDenunciasRoute =
+  AuthenticatedAdminDenunciasRouteImport.update({
+    id: '/denuncias',
+    path: '/denuncias',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminConfiguracoesRoute =
+  AuthenticatedAdminConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminCategoriasRoute =
   AuthenticatedAdminCategoriasRouteImport.update({
     id: '/categorias',
@@ -162,10 +238,21 @@ export interface FileRoutesByFullPath {
   '/loja/$slug': typeof LojaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/admin/categorias': typeof AuthenticatedAdminCategoriasRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/admin/denuncias': typeof AuthenticatedAdminDenunciasRoute
+  '/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/lojas': typeof AuthenticatedAdminLojasRoute
   '/admin/lojistas': typeof AuthenticatedAdminLojistasRoute
+  '/admin/marcas': typeof AuthenticatedAdminMarcasRoute
+  '/admin/ofertas': typeof AuthenticatedAdminOfertasRoute
+  '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/planos': typeof AuthenticatedAdminPlanosRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
+  '/admin/regioes': typeof AuthenticatedAdminRegioesRoute
+  '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
+  '/admin/solicitacoes': typeof AuthenticatedAdminSolicitacoesRoute
+  '/admin/subcategorias': typeof AuthenticatedAdminSubcategoriasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
@@ -184,10 +271,21 @@ export interface FileRoutesByTo {
   '/loja/$slug': typeof LojaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/admin/categorias': typeof AuthenticatedAdminCategoriasRoute
+  '/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/admin/denuncias': typeof AuthenticatedAdminDenunciasRoute
+  '/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
+  '/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/admin/lojas': typeof AuthenticatedAdminLojasRoute
   '/admin/lojistas': typeof AuthenticatedAdminLojistasRoute
+  '/admin/marcas': typeof AuthenticatedAdminMarcasRoute
+  '/admin/ofertas': typeof AuthenticatedAdminOfertasRoute
+  '/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/admin/planos': typeof AuthenticatedAdminPlanosRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
+  '/admin/regioes': typeof AuthenticatedAdminRegioesRoute
+  '/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
+  '/admin/solicitacoes': typeof AuthenticatedAdminSolicitacoesRoute
+  '/admin/subcategorias': typeof AuthenticatedAdminSubcategoriasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
@@ -209,10 +307,21 @@ export interface FileRoutesById {
   '/loja/$slug': typeof LojaSlugRoute
   '/produto/$slug': typeof ProdutoSlugRoute
   '/_authenticated/admin/categorias': typeof AuthenticatedAdminCategoriasRoute
+  '/_authenticated/admin/configuracoes': typeof AuthenticatedAdminConfiguracoesRoute
+  '/_authenticated/admin/denuncias': typeof AuthenticatedAdminDenunciasRoute
+  '/_authenticated/admin/financeiro': typeof AuthenticatedAdminFinanceiroRoute
+  '/_authenticated/admin/logs': typeof AuthenticatedAdminLogsRoute
   '/_authenticated/admin/lojas': typeof AuthenticatedAdminLojasRoute
   '/_authenticated/admin/lojistas': typeof AuthenticatedAdminLojistasRoute
+  '/_authenticated/admin/marcas': typeof AuthenticatedAdminMarcasRoute
+  '/_authenticated/admin/ofertas': typeof AuthenticatedAdminOfertasRoute
+  '/_authenticated/admin/permissoes': typeof AuthenticatedAdminPermissoesRoute
   '/_authenticated/admin/planos': typeof AuthenticatedAdminPlanosRoute
   '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
+  '/_authenticated/admin/regioes': typeof AuthenticatedAdminRegioesRoute
+  '/_authenticated/admin/relatorios': typeof AuthenticatedAdminRelatoriosRoute
+  '/_authenticated/admin/solicitacoes': typeof AuthenticatedAdminSolicitacoesRoute
+  '/_authenticated/admin/subcategorias': typeof AuthenticatedAdminSubcategoriasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/_authenticated/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
@@ -234,10 +343,21 @@ export interface FileRouteTypes {
     | '/loja/$slug'
     | '/produto/$slug'
     | '/admin/categorias'
+    | '/admin/configuracoes'
+    | '/admin/denuncias'
+    | '/admin/financeiro'
+    | '/admin/logs'
     | '/admin/lojas'
     | '/admin/lojistas'
+    | '/admin/marcas'
+    | '/admin/ofertas'
+    | '/admin/permissoes'
     | '/admin/planos'
     | '/admin/produtos'
+    | '/admin/regioes'
+    | '/admin/relatorios'
+    | '/admin/solicitacoes'
+    | '/admin/subcategorias'
     | '/admin/usuarios'
     | '/lojista/assinatura'
     | '/minha-conta/alertas'
@@ -256,10 +376,21 @@ export interface FileRouteTypes {
     | '/loja/$slug'
     | '/produto/$slug'
     | '/admin/categorias'
+    | '/admin/configuracoes'
+    | '/admin/denuncias'
+    | '/admin/financeiro'
+    | '/admin/logs'
     | '/admin/lojas'
     | '/admin/lojistas'
+    | '/admin/marcas'
+    | '/admin/ofertas'
+    | '/admin/permissoes'
     | '/admin/planos'
     | '/admin/produtos'
+    | '/admin/regioes'
+    | '/admin/relatorios'
+    | '/admin/solicitacoes'
+    | '/admin/subcategorias'
     | '/admin/usuarios'
     | '/lojista/assinatura'
     | '/minha-conta/alertas'
@@ -280,10 +411,21 @@ export interface FileRouteTypes {
     | '/loja/$slug'
     | '/produto/$slug'
     | '/_authenticated/admin/categorias'
+    | '/_authenticated/admin/configuracoes'
+    | '/_authenticated/admin/denuncias'
+    | '/_authenticated/admin/financeiro'
+    | '/_authenticated/admin/logs'
     | '/_authenticated/admin/lojas'
     | '/_authenticated/admin/lojistas'
+    | '/_authenticated/admin/marcas'
+    | '/_authenticated/admin/ofertas'
+    | '/_authenticated/admin/permissoes'
     | '/_authenticated/admin/planos'
     | '/_authenticated/admin/produtos'
+    | '/_authenticated/admin/regioes'
+    | '/_authenticated/admin/relatorios'
+    | '/_authenticated/admin/solicitacoes'
+    | '/_authenticated/admin/subcategorias'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/lojista/assinatura'
     | '/_authenticated/minha-conta/alertas'
@@ -426,6 +568,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/subcategorias': {
+      id: '/_authenticated/admin/subcategorias'
+      path: '/subcategorias'
+      fullPath: '/admin/subcategorias'
+      preLoaderRoute: typeof AuthenticatedAdminSubcategoriasRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/solicitacoes': {
+      id: '/_authenticated/admin/solicitacoes'
+      path: '/solicitacoes'
+      fullPath: '/admin/solicitacoes'
+      preLoaderRoute: typeof AuthenticatedAdminSolicitacoesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/relatorios': {
+      id: '/_authenticated/admin/relatorios'
+      path: '/relatorios'
+      fullPath: '/admin/relatorios'
+      preLoaderRoute: typeof AuthenticatedAdminRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/regioes': {
+      id: '/_authenticated/admin/regioes'
+      path: '/regioes'
+      fullPath: '/admin/regioes'
+      preLoaderRoute: typeof AuthenticatedAdminRegioesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/produtos': {
       id: '/_authenticated/admin/produtos'
       path: '/produtos'
@@ -438,6 +608,27 @@ declare module '@tanstack/react-router' {
       path: '/planos'
       fullPath: '/admin/planos'
       preLoaderRoute: typeof AuthenticatedAdminPlanosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/permissoes': {
+      id: '/_authenticated/admin/permissoes'
+      path: '/permissoes'
+      fullPath: '/admin/permissoes'
+      preLoaderRoute: typeof AuthenticatedAdminPermissoesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/ofertas': {
+      id: '/_authenticated/admin/ofertas'
+      path: '/ofertas'
+      fullPath: '/admin/ofertas'
+      preLoaderRoute: typeof AuthenticatedAdminOfertasRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/marcas': {
+      id: '/_authenticated/admin/marcas'
+      path: '/marcas'
+      fullPath: '/admin/marcas'
+      preLoaderRoute: typeof AuthenticatedAdminMarcasRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/lojistas': {
@@ -454,6 +645,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLojasRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/logs': {
+      id: '/_authenticated/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AuthenticatedAdminLogsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/financeiro': {
+      id: '/_authenticated/admin/financeiro'
+      path: '/financeiro'
+      fullPath: '/admin/financeiro'
+      preLoaderRoute: typeof AuthenticatedAdminFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/denuncias': {
+      id: '/_authenticated/admin/denuncias'
+      path: '/denuncias'
+      fullPath: '/admin/denuncias'
+      preLoaderRoute: typeof AuthenticatedAdminDenunciasRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/configuracoes': {
+      id: '/_authenticated/admin/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/admin/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAdminConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/categorias': {
       id: '/_authenticated/admin/categorias'
       path: '/categorias'
@@ -466,20 +685,42 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminCategoriasRoute: typeof AuthenticatedAdminCategoriasRoute
+  AuthenticatedAdminConfiguracoesRoute: typeof AuthenticatedAdminConfiguracoesRoute
+  AuthenticatedAdminDenunciasRoute: typeof AuthenticatedAdminDenunciasRoute
+  AuthenticatedAdminFinanceiroRoute: typeof AuthenticatedAdminFinanceiroRoute
+  AuthenticatedAdminLogsRoute: typeof AuthenticatedAdminLogsRoute
   AuthenticatedAdminLojasRoute: typeof AuthenticatedAdminLojasRoute
   AuthenticatedAdminLojistasRoute: typeof AuthenticatedAdminLojistasRoute
+  AuthenticatedAdminMarcasRoute: typeof AuthenticatedAdminMarcasRoute
+  AuthenticatedAdminOfertasRoute: typeof AuthenticatedAdminOfertasRoute
+  AuthenticatedAdminPermissoesRoute: typeof AuthenticatedAdminPermissoesRoute
   AuthenticatedAdminPlanosRoute: typeof AuthenticatedAdminPlanosRoute
   AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
+  AuthenticatedAdminRegioesRoute: typeof AuthenticatedAdminRegioesRoute
+  AuthenticatedAdminRelatoriosRoute: typeof AuthenticatedAdminRelatoriosRoute
+  AuthenticatedAdminSolicitacoesRoute: typeof AuthenticatedAdminSolicitacoesRoute
+  AuthenticatedAdminSubcategoriasRoute: typeof AuthenticatedAdminSubcategoriasRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminCategoriasRoute: AuthenticatedAdminCategoriasRoute,
+  AuthenticatedAdminConfiguracoesRoute: AuthenticatedAdminConfiguracoesRoute,
+  AuthenticatedAdminDenunciasRoute: AuthenticatedAdminDenunciasRoute,
+  AuthenticatedAdminFinanceiroRoute: AuthenticatedAdminFinanceiroRoute,
+  AuthenticatedAdminLogsRoute: AuthenticatedAdminLogsRoute,
   AuthenticatedAdminLojasRoute: AuthenticatedAdminLojasRoute,
   AuthenticatedAdminLojistasRoute: AuthenticatedAdminLojistasRoute,
+  AuthenticatedAdminMarcasRoute: AuthenticatedAdminMarcasRoute,
+  AuthenticatedAdminOfertasRoute: AuthenticatedAdminOfertasRoute,
+  AuthenticatedAdminPermissoesRoute: AuthenticatedAdminPermissoesRoute,
   AuthenticatedAdminPlanosRoute: AuthenticatedAdminPlanosRoute,
   AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
+  AuthenticatedAdminRegioesRoute: AuthenticatedAdminRegioesRoute,
+  AuthenticatedAdminRelatoriosRoute: AuthenticatedAdminRelatoriosRoute,
+  AuthenticatedAdminSolicitacoesRoute: AuthenticatedAdminSolicitacoesRoute,
+  AuthenticatedAdminSubcategoriasRoute: AuthenticatedAdminSubcategoriasRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
