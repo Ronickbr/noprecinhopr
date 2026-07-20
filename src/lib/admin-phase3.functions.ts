@@ -57,17 +57,17 @@ export const adminListAuditLogs = createServerFn({ method: "GET" })
 // ============ SITE SETTINGS ============
 export const adminGetSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<Array<{ key: string; value_json: string }>> => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabaseAdmin as any).from("site_settings").select("key, value, updated_at");
-    const map: Record<string, Record<string, unknown>> = {};
-    for (const row of (data ?? []) as Array<{ key: string; value: Record<string, unknown> }>) {
-      map[row.key] = row.value ?? {};
-    }
-    return map;
+    const { data } = await (supabaseAdmin as any).from("site_settings").select("key, value");
+    return ((data ?? []) as Array<{ key: string; value: unknown }>).map((r) => ({
+      key: r.key,
+      value_json: JSON.stringify(r.value ?? {}),
+    }));
   });
+
 
 export const adminUpdateSetting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

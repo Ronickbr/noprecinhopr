@@ -72,7 +72,7 @@ function RelatoriosPage() {
         <StatCard label="Produtos" value={d?.totals.products ?? 0} icon={Package} />
         <StatCard label="Ofertas" value={d?.totals.offers ?? 0} icon={BarChart3} />
         <StatCard label={`Cliques (${days}d)`} value={d?.totals.clicks ?? 0} icon={MousePointerClick} accent="highlight" />
-        <StatCard label="MRR" value={d ? formatPrice(d.totals.mrr_cents) : "—"} icon={Wallet} accent="success" />
+        <StatCard label="MRR" value={d ? formatBRL(d.totals.mrr_cents) : "—"} icon={Wallet} accent="success" />
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card p-5">
