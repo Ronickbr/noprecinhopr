@@ -147,3 +147,103 @@ function MiniKpi({ label, value, hint, tone }: { label: string; value: string; h
     </div>
   );
 }
+
+function AlertCard({ alert: a }: { alert: FinanceAlert }) {
+  const [open, setOpen] = useState(a.level === "critical");
+  const styles = a.level === "critical"
+    ? { border: "border-destructive/40", bg: "bg-destructive/5", icon: AlertCircle, iconColor: "text-destructive", badge: "bg-destructive/10 text-destructive" }
+    : a.level === "warning"
+    ? { border: "border-warning/40", bg: "bg-warning/5", icon: AlertTriangle, iconColor: "text-warning", badge: "bg-warning/10 text-warning" }
+    : a.id === "ok"
+    ? { border: "border-success/40", bg: "bg-success/5", icon: CheckCircle2, iconColor: "text-success", badge: "bg-success/10 text-success" }
+    : { border: "border-border/60", bg: "bg-muted/30", icon: Info, iconColor: "text-muted-foreground", badge: "bg-muted text-muted-foreground" };
+  const Icon = styles.icon;
+  const sevColor = a.severity_score >= 70 ? "bg-destructive" : a.severity_score >= 40 ? "bg-warning" : "bg-success";
+
+  return (
+    <div className={`rounded-lg border ${styles.border} ${styles.bg} transition-shadow ${open ? "shadow-sm" : ""}`}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-3 p-3 text-left"
+        aria-expanded={open}
+      >
+        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${styles.iconColor}`} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium">{a.title}</p>
+            <span className={`rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${styles.badge}`}>{a.level}</span>
+            <span className="rounded-full bg-muted/60 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{a.category}</span>
+            {a.metric && <span className="ml-auto font-mono text-[11px] text-muted-foreground">{a.metric}</span>}
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">{a.message}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-border/60">
+              <div className={`h-full ${sevColor} transition-all`} style={{ width: `${Math.min(100, a.severity_score)}%` }} />
+            </div>
+            <span className="font-mono text-[10px] text-muted-foreground">sev {a.severity_score}</span>
+          </div>
+        </div>
+        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="space-y-3 border-t border-border/40 px-3 py-3">
+          {(a.threshold || a.current) && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {a.threshold && (
+                <DetailBlock icon={Target} label="Limiar">
+                  <span className="font-mono text-xs">{a.threshold}</span>
+                </DetailBlock>
+              )}
+              {a.current && (
+                <DetailBlock icon={Activity} label="Valor atual">
+                  <span className="font-mono text-xs">{a.current}</span>
+                </DetailBlock>
+              )}
+            </div>
+          )}
+          <DetailBlock icon={Info} label="Contexto">
+            <p className="text-xs leading-relaxed text-foreground/90">{a.context}</p>
+          </DetailBlock>
+          <DetailBlock icon={AlertCircle} label="Impacto">
+            <p className="text-xs leading-relaxed text-foreground/90">{a.impact}</p>
+          </DetailBlock>
+          <DetailBlock icon={Lightbulb} label="Ações recomendadas">
+            <ul className="space-y-1">
+              {a.recommendations.map((r, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-foreground/90">
+                  <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-current opacity-60" />
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          </DetailBlock>
+          {a.related_metrics.length > 0 && (
+            <DetailBlock icon={BarChart3} label="Métricas relacionadas">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {a.related_metrics.map((m, i) => (
+                  <div key={i} className="rounded border border-border/50 bg-background/60 px-2 py-1.5">
+                    <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{m.label}</div>
+                    <div className="mt-0.5 font-mono text-xs tabular-nums">{m.value}</div>
+                  </div>
+                ))}
+              </div>
+            </DetailBlock>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailBlock({ icon: Icon, label, children }: { icon: React.ComponentType<{ className?: string }>; label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
+        <Icon className="h-3 w-3" />
+        <span className="font-mono text-[10px] uppercase tracking-widest">{label}</span>
+      </div>
+      <div className="pl-4">{children}</div>
+    </div>
+  );
+}
