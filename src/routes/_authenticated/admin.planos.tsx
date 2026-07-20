@@ -4,6 +4,8 @@ import { useState } from "react";
 import { listMerchantPlansForAdmin, adminUpsertPlan, adminDeletePlan } from "@/lib/products.functions";
 import { CreditCard, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/admin/confirm-dialog";
+import { getErrorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/admin/planos")({
   component: PlansPage,
@@ -42,6 +44,7 @@ function PlansPage() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["admin-plans-view"], queryFn: () => listMerchantPlansForAdmin(), retry: false });
   const [editing, setEditing] = useState<FormState | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   const upsert = useMutation({
     mutationFn: (form: FormState) =>
@@ -61,7 +64,7 @@ function PlansPage() {
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["admin-plans-view"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const del = useMutation({
@@ -70,7 +73,7 @@ function PlansPage() {
       toast.success("Plano excluído");
       qc.invalidateQueries({ queryKey: ["admin-plans-view"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   return (
@@ -124,7 +127,15 @@ function PlansPage() {
                   <Pencil className="h-3 w-3" /> Editar
                 </button>
                 <button
-                  onClick={() => { if (confirm(`Excluir plano "${p.name}"?`)) del.mutate(p.id); }}
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: `Excluir plano "${p.name}"?`,
+                      description: "Lojistas ativos nesse plano poderão ser afetados.",
+                      confirmLabel: "Excluir",
+                      destructive: true,
+                    });
+                    if (ok) del.mutate(p.id);
+                  }}
                   className="inline-flex items-center justify-center gap-1 rounded-md border border-destructive/40 px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-3 w-3" />
