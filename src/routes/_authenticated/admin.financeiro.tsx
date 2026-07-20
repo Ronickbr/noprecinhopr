@@ -104,11 +104,11 @@ function FinanceiroPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-card p-5">
           <h3 className="mb-3 text-sm font-semibold">Receita por plano</h3>
-          <DataTable rows={d?.by_plan ?? []} columns={planCols} loading={q.isLoading} rowKey={(r) => r.plan_id} empty="Sem assinaturas ativas." />
+          <DataTable rows={d?.by_plan ?? []} columns={planCols} isLoading={q.isLoading} getRowId={(r: FinanceSummary["by_plan"][number]) => r.plan_id} emptyMessage="Sem assinaturas ativas." />
         </div>
         <div className="rounded-xl border border-border/60 bg-card p-5">
           <h3 className="mb-3 flex items-center gap-1.5 text-sm font-semibold"><CalendarClock className="h-4 w-4" /> Renovações próximas (30d)</h3>
-          <DataTable rows={d?.upcoming_renewals ?? []} columns={renewCols} loading={q.isLoading} rowKey={(r) => r.id} empty="Nenhuma renovação nos próximos 30 dias." />
+          <DataTable rows={d?.upcoming_renewals ?? []} columns={renewCols} isLoading={q.isLoading} getRowId={(r: FinanceSummary["upcoming_renewals"][number]) => r.id} emptyMessage="Nenhuma renovação nos próximos 30 dias." />
         </div>
       </div>
     </div>
