@@ -95,6 +95,8 @@ function LojasPage() {
         rows={data?.rows}
         columns={cols}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => refetch()}
         getRowId={(m) => m.id}
         onRowClick={(m) => setSelected(m)}
         page={page}
@@ -102,6 +104,7 @@ function LojasPage() {
         total={data?.count}
         onPageChange={setPage}
         emptyMessage="Nenhuma loja encontrada com estes filtros."
+        emptyHint={applied || statusFilter !== "all" ? "Limpe filtros para ver todas as lojas." : undefined}
         toolbar={
           <>
             <SearchInput
@@ -200,7 +203,15 @@ function LojasPage() {
 
             <Section title="Zona de perigo">
               <button
-                onClick={() => { if (confirm(`Excluir loja "${selected.name}"? Isso remove todas as ofertas.`)) remove.mutate(selected.id); }}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: `Excluir loja "${selected.name}"?`,
+                    description: "Todas as ofertas dessa loja serão removidas. Esta ação é irreversível.",
+                    confirmLabel: "Excluir loja",
+                    destructive: true,
+                  });
+                  if (ok) remove.mutate(selected.id);
+                }}
                 className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/20"
               >
                 <Trash2 className="h-3.5 w-3.5" /> Excluir loja permanentemente
