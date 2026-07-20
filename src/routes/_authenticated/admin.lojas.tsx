@@ -14,16 +14,22 @@ export const Route = createFileRoute("/_authenticated/admin/lojas")({
   component: LojasPage,
 });
 
-type Merchant = NonNullable<Awaited<ReturnType<typeof adminListMerchants>>>[number];
+type Merchant = NonNullable<Awaited<ReturnType<typeof adminListMerchants>>>["rows"][number];
 
 function LojasPage() {
   const qc = useQueryClient();
-  const { data: merchants, isLoading } = useQuery({ queryKey: ["admin-merchants"], queryFn: () => adminListMerchants(), retry: false });
-  const { data: plans } = useQuery({ queryKey: ["admin-plans"], queryFn: () => listMerchantPlansForAdmin(), retry: false });
-
   const [q, setQ] = useState("");
+  const [applied, setApplied] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "approved" | "pending" | "suspended">("all");
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Merchant | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-merchants", applied, statusFilter, page],
+    queryFn: () => adminListMerchants({ data: { q: applied || undefined, status: statusFilter, page } }),
+    retry: false,
+  });
+  const { data: plans } = useQuery({ queryKey: ["admin-plans"], queryFn: () => listMerchantPlansForAdmin(), retry: false });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-merchants"] });
 
@@ -52,16 +58,6 @@ function LojasPage() {
     onSuccess: () => { invalidate(); toast.success("Papel atualizado"); },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  const filtered = useMemo(() => {
-    let list = merchants ?? [];
-    if (statusFilter !== "all") list = list.filter((m) => m.status === statusFilter);
-    if (q.trim()) {
-      const s = q.toLowerCase();
-      list = list.filter((m) => m.name.toLowerCase().includes(s) || m.slug.toLowerCase().includes(s) || (m.owner?.display_name ?? "").toLowerCase().includes(s));
-    }
-    return list;
-  }, [merchants, statusFilter, q]);
 
   const cols: Column<Merchant>[] = [
     {
