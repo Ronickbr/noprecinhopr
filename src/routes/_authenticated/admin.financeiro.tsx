@@ -4,7 +4,7 @@ import { PageHeader, StatCard } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { adminFinanceSummary, type FinanceSummary } from "@/lib/admin-phase4.functions";
 import { formatBRL } from "@/lib/format";
-import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock } from "lucide-react";
+import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock, AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, Legend,
