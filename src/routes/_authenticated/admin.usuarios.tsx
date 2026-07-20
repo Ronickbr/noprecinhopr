@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { adminListUsers, adminGrantRole } from "@/lib/products.functions";
 import { toast } from "sonner";
 import { PageHeader, SearchInput } from "@/components/admin/ui";
@@ -11,33 +11,27 @@ export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   component: UsersPage,
 });
 
-type User = NonNullable<Awaited<ReturnType<typeof adminListUsers>>>[number];
+type User = NonNullable<Awaited<ReturnType<typeof adminListUsers>>>["rows"][number];
+type RoleFilter = "all" | "admin" | "merchant" | "user";
 
 function UsersPage() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["admin-users"], queryFn: () => adminListUsers(), retry: false });
   const [q, setQ] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "merchant" | "user">("all");
+  const [applied, setApplied] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-users", applied, roleFilter, page],
+    queryFn: () => adminListUsers({ data: { q: applied || undefined, role: roleFilter, page } }),
+    retry: false,
+  });
 
   const grant = useMutation({
     mutationFn: (vars: { user_id: string; role: "admin" | "merchant" | "user"; action: "grant" | "revoke" }) => adminGrantRole({ data: vars }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-users"] }); toast.success("Papel atualizado"); },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  const filtered = useMemo(() => {
-    let list = data ?? [];
-    if (roleFilter !== "all") {
-      list = roleFilter === "user"
-        ? list.filter((u) => !u.roles.includes("admin") && !u.roles.includes("merchant"))
-        : list.filter((u) => u.roles.includes(roleFilter));
-    }
-    if (q.trim()) {
-      const s = q.toLowerCase();
-      list = list.filter((u) => (u.display_name ?? "").toLowerCase().includes(s) || (u.email ?? "").toLowerCase().includes(s) || u.id.includes(s));
-    }
-    return list;
-  }, [data, q, roleFilter]);
 
   const cols: Column<User>[] = [
     {
@@ -99,19 +93,29 @@ function UsersPage() {
     <div className="space-y-6">
       <PageHeader title="Usuários" description="Pesquisar contas, gerenciar papéis e permissões." />
       <DataTable
-        rows={filtered}
+        rows={data?.rows}
         columns={cols}
         isLoading={isLoading}
         getRowId={(u) => u.id}
+        page={page}
+        pageSize={data?.pageSize}
+        total={data?.count}
+        onPageChange={setPage}
         emptyMessage="Nenhum usuário encontrado."
         toolbar={
           <>
-            <SearchInput value={q} onChange={setQ} placeholder="Nome, email ou ID…" className="w-full sm:w-72" />
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="Nome, email ou ID…"
+              onSubmit={() => { setApplied(q); setPage(1); }}
+              className="w-full sm:w-72"
+            />
             <div className="flex items-center gap-1 rounded-md border border-border/60 bg-card p-0.5">
               {(["all", "admin", "merchant", "user"] as const).map((r) => (
                 <button
                   key={r}
-                  onClick={() => setRoleFilter(r)}
+                  onClick={() => { setRoleFilter(r); setPage(1); }}
                   className={`h-7 rounded px-2.5 text-[11px] font-mono uppercase tracking-widest transition-colors ${
                     roleFilter === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -120,7 +124,6 @@ function UsersPage() {
                 </button>
               ))}
             </div>
-            <span className="ml-auto text-xs font-mono text-muted-foreground">{filtered.length} de {data?.length ?? 0}</span>
           </>
         }
       />
