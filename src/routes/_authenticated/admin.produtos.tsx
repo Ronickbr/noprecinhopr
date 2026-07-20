@@ -1,25 +1,32 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { adminListAllProducts, adminDeleteProduct } from "@/lib/products.functions";
+import { adminListAllProducts, adminDeleteProduct, adminListCategories } from "@/lib/products.functions";
 import { toast } from "sonner";
-import { Trash2, Search, ExternalLink } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { PageHeader, SearchInput } from "@/components/admin/ui";
+import { DataTable, type Column } from "@/components/admin/data-table";
+import { Trash2, ExternalLink, Package } from "lucide-react";
+import { formatBRL } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/admin/produtos")({
   component: ProductsPage,
 });
+
+type Row = NonNullable<Awaited<ReturnType<typeof adminListAllProducts>>>["rows"][number];
 
 function ProductsPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [applied, setApplied] = useState("");
   const [page, setPage] = useState(1);
+  const [category, setCategory] = useState<string>("");
+
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-products", applied, page],
+    queryKey: ["admin-products", applied, page, category],
     queryFn: () => adminListAllProducts({ data: { q: applied || undefined, page } }),
     retry: false,
   });
+  const { data: cats } = useQuery({ queryKey: ["admin-cats"], queryFn: () => adminListCategories(), retry: false });
 
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteProduct({ data: { id } }),
@@ -27,70 +34,80 @@ function ProductsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.count / data.pageSize)) : 1;
+  const cols: Column<Row>[] = [
+    {
+      key: "product",
+      header: "Produto",
+      cell: (p) => (
+        <div className="flex items-center gap-3">
+          {p.image_url ? (
+            <img src={p.image_url} alt="" className="h-11 w-11 rounded-md border border-border/60 object-cover" />
+          ) : (
+            <div className="grid h-11 w-11 place-items-center rounded-md bg-muted text-muted-foreground">
+              <Package className="h-4 w-4" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-medium">{p.name}</p>
+            <p className="truncate font-mono text-[10px] text-muted-foreground">/{p.slug}</p>
+          </div>
+        </div>
+      ),
+    },
+    { key: "brand", header: "Marca", cell: (p) => <span className="text-sm text-muted-foreground">{p.brand ?? "—"}</span> },
+    { key: "created", header: "Cadastro", cell: (p) => <span className="font-mono text-[11px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</span> },
+    { key: "actions", header: "", align: "right", cell: (p) => (
+      <div className="flex justify-end gap-2">
+        <Link to="/produto/$slug" params={{ slug: p.slug }} className="inline-flex h-7 items-center gap-1 rounded-md border border-border/60 px-2 text-xs hover:bg-accent">
+          <ExternalLink className="h-3 w-3" /> Ver
+        </Link>
+        <button
+          onClick={(e) => { e.stopPropagation(); if (confirm(`Excluir "${p.name}"?`)) remove.mutate(p.id); }}
+          className="inline-flex h-7 items-center gap-1 rounded-md bg-destructive/10 px-2 text-xs text-destructive hover:bg-destructive/20"
+        >
+          <Trash2 className="h-3 w-3" /> Excluir
+        </button>
+      </div>
+    ) },
+  ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold text-foreground">Produtos</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Buscar e moderar produtos do catálogo.</p>
-      </div>
+      <PageHeader title="Produtos" description="Buscar, filtrar e moderar o catálogo global." />
 
-      <form onSubmit={(e) => { e.preventDefault(); setApplied(q); setPage(1); }} className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome…" className="w-full h-10 pl-10 pr-3 rounded-lg border border-border bg-card text-sm" />
-      </form>
-
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-left text-xs uppercase font-mono tracking-widest text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Produto</th>
-              <th className="px-4 py-3 font-medium">Marca</th>
-              <th className="px-4 py-3 font-medium">Criado</th>
-              <th className="px-4 py-3 font-medium">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {isLoading ? (
-              <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
-            ) : (data?.rows ?? []).map((p) => (
-              <tr key={p.id}>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    {p.image_url ? <img src={p.image_url} alt="" className="h-10 w-10 rounded object-cover border border-border" /> : <div className="h-10 w-10 rounded bg-muted" />}
-                    <div>
-                      <p className="font-medium">{p.name}</p>
-                      <p className="text-xs text-muted-foreground font-mono">/{p.slug}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">{p.brand ?? "—"}</td>
-                <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{new Date(p.created_at).toLocaleDateString("pt-BR")}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-3">
-                    <Link to="/produto/$slug" params={{ slug: p.slug }} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                      <ExternalLink className="h-3.5 w-3.5" /> Ver
-                    </Link>
-                    <button onClick={() => { if (confirm(`Excluir "${p.name}"?`)) remove.mutate(p.id); }} className="inline-flex items-center gap-1 text-xs text-destructive hover:underline">
-                      <Trash2 className="h-3.5 w-3.5" /> Excluir
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
-        <span>{data ? `${data.count.toLocaleString("pt-BR")} produtos` : ""}</span>
-        <div className="flex gap-2">
-          <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="h-8 px-3 rounded border border-border disabled:opacity-40">‹ Anterior</button>
-          <span className="h-8 px-2 flex items-center">{page} / {totalPages}</span>
-          <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="h-8 px-3 rounded border border-border disabled:opacity-40">Próxima ›</button>
-        </div>
-      </div>
+      <DataTable
+        rows={data?.rows}
+        columns={cols}
+        isLoading={isLoading}
+        getRowId={(p) => p.id}
+        page={page}
+        pageSize={data?.pageSize}
+        total={data?.count}
+        onPageChange={setPage}
+        emptyMessage="Nenhum produto encontrado."
+        toolbar={
+          <>
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="Buscar produto por nome…"
+              onSubmit={() => { setApplied(q); setPage(1); }}
+              className="w-full sm:w-80"
+            />
+            <select
+              value={category}
+              onChange={(e) => { setCategory(e.target.value); setPage(1); }}
+              className="h-9 rounded-md border border-border/60 bg-card px-2 text-sm"
+            >
+              <option value="">Todas categorias</option>
+              {(cats ?? []).map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
+            </select>
+          </>
+        }
+      />
     </div>
   );
 }
+
+// Reference to keep import used symbolically
+formatBRL;
