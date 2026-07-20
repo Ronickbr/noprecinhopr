@@ -116,7 +116,7 @@ export const adminOffersInsights = createServerFn({ method: "GET" })
 export const adminListApprovals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => z.object({ status: z.enum(["pending", "approved", "rejected", "all"]).default("pending") }).parse(raw ?? {}))
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data, context }): Promise<Array<{ id: string; kind: string; status: string; requester_id: string | null; target_id: string | null; payload: unknown; reviewer_id: string | null; reviewer_notes: string | null; reviewed_at: string | null; created_at: string }>> => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
