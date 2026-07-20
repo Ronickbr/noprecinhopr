@@ -579,6 +579,7 @@ export type Database = {
         Row: {
           about: string | null
           banner_url: string | null
+          city: string | null
           created_at: string
           description: string | null
           featured_product_ids: string[]
@@ -588,6 +589,7 @@ export type Database = {
           owner_user_id: string | null
           secondary_banner_url: string | null
           slug: string
+          state: string | null
           status: Database["public"]["Enums"]["store_status"]
           trust_score: number
           updated_at: string
@@ -595,6 +597,7 @@ export type Database = {
         Insert: {
           about?: string | null
           banner_url?: string | null
+          city?: string | null
           created_at?: string
           description?: string | null
           featured_product_ids?: string[]
@@ -604,6 +607,7 @@ export type Database = {
           owner_user_id?: string | null
           secondary_banner_url?: string | null
           slug: string
+          state?: string | null
           status?: Database["public"]["Enums"]["store_status"]
           trust_score?: number
           updated_at?: string
@@ -611,6 +615,7 @@ export type Database = {
         Update: {
           about?: string | null
           banner_url?: string | null
+          city?: string | null
           created_at?: string
           description?: string | null
           featured_product_ids?: string[]
@@ -620,6 +625,7 @@ export type Database = {
           owner_user_id?: string | null
           secondary_banner_url?: string | null
           slug?: string
+          state?: string | null
           status?: Database["public"]["Enums"]["store_status"]
           trust_score?: number
           updated_at?: string
