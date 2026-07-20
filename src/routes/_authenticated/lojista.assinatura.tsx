@@ -8,6 +8,7 @@ import {
   subscribeToPlan,
   cancelMySubscription,
 } from "@/lib/subscriptions.functions";
+import { useConfirm } from "@/components/admin/confirm-dialog";
 
 export const Route = createFileRoute("/_authenticated/lojista/assinatura")({
   head: () => ({
@@ -22,6 +23,7 @@ function formatBRL(cents: number) {
 
 function AssinaturaPage() {
   const qc = useQueryClient();
+  const { confirm, dialog } = useConfirm();
   const { data: plans = [] } = useQuery({ queryKey: ["merchant-plans"], queryFn: () => listPlans() });
   const { data: sub } = useQuery({ queryKey: ["my-subscription"], queryFn: () => getMySubscription() });
 
@@ -100,8 +102,14 @@ function AssinaturaPage() {
           </div>
           {(isActive || isTrialing) && (
             <button
-              onClick={() => {
-                if (confirm("Cancelar assinatura? Você perde acesso ao envio de catálogo.")) cancel.mutate();
+              onClick={async () => {
+                const ok = await confirm({
+                  title: "Cancelar assinatura?",
+                  description: "Você perde acesso ao envio de catálogo ao final do período atual.",
+                  confirmLabel: "Cancelar assinatura",
+                  destructive: true,
+                });
+                if (ok) cancel.mutate();
               }}
               className="text-xs font-mono uppercase text-muted-foreground hover:text-destructive"
             >
