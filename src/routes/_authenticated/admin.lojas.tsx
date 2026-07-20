@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Trash2, ShieldCheck, ShieldX, Star, CreditCard, UserCog } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/admin")({
+export const Route = createFileRoute("/_authenticated/admin/lojas")({
   head: () => ({ meta: [{ title: "Admin — PrecinhoBom" }, { name: "robots", content: "noindex" }] }),
   beforeLoad: async () => {
     const { data: u } = await supabase.auth.getUser();
