@@ -51,23 +51,6 @@ export function DataTable<T>({
   onPageChange,
   toolbar,
 }: Props<T>) {
-
-export function DataTable<T>({
-  rows,
-  columns,
-  isLoading,
-  emptyMessage = "Nenhum registro encontrado.",
-  getRowId,
-  onRowClick,
-  sortKey,
-  sortDir,
-  onSortChange,
-  page,
-  pageSize,
-  total,
-  onPageChange,
-  toolbar,
-}: Props<T>) {
   const [visibleCols, setVisibleCols] = useState<Record<string, boolean>>({});
   const shown = useMemo(
     () => columns.filter((c) => visibleCols[c.key] !== false),
