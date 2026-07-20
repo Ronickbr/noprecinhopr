@@ -89,20 +89,30 @@ function LojasPage() {
       <PageHeader title="Lojas" description="Aprove, suspenda, ajuste confiança e gerencie assinaturas." />
 
       <DataTable
-        rows={filtered}
+        rows={data?.rows}
         columns={cols}
         isLoading={isLoading}
         getRowId={(m) => m.id}
         onRowClick={(m) => setSelected(m)}
+        page={page}
+        pageSize={data?.pageSize}
+        total={data?.count}
+        onPageChange={setPage}
         emptyMessage="Nenhuma loja encontrada com estes filtros."
         toolbar={
           <>
-            <SearchInput value={q} onChange={setQ} placeholder="Buscar por nome, slug ou lojista…" className="w-full sm:w-72" />
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              onSubmit={() => { setApplied(q); setPage(1); }}
+              placeholder="Buscar por nome ou slug…"
+              className="w-full sm:w-72"
+            />
             <div className="flex items-center gap-1 rounded-md border border-border/60 bg-card p-0.5">
               {(["all", "approved", "pending", "suspended"] as const).map((s) => (
                 <button
                   key={s}
-                  onClick={() => setStatusFilter(s)}
+                  onClick={() => { setStatusFilter(s); setPage(1); }}
                   className={`h-7 rounded px-2.5 text-[11px] font-mono uppercase tracking-widest transition-colors ${
                     statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -111,7 +121,6 @@ function LojasPage() {
                 </button>
               ))}
             </div>
-            <span className="ml-auto text-xs font-mono text-muted-foreground">{filtered.length} de {merchants?.length ?? 0}</span>
           </>
         }
       />
