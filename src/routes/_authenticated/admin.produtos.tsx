@@ -103,6 +103,16 @@ function ProductsPage() {
               <option value="">Todas categorias</option>
               {(cats ?? []).map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
             </select>
+            <select
+              value={sort}
+              onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }}
+              className="h-9 rounded-md border border-border/60 bg-card px-2 text-sm"
+            >
+              <option value="recent">Mais recentes</option>
+              <option value="oldest">Mais antigos</option>
+              <option value="name_asc">Nome A-Z</option>
+              <option value="name_desc">Nome Z-A</option>
+            </select>
           </>
         }
       />
