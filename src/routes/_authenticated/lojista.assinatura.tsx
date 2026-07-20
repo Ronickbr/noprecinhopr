@@ -186,6 +186,7 @@ function AssinaturaPage() {
         Cobrança recorrente ainda não integrada — assinatura em modo simulado. Após o período grátis o status vira{" "}
         <span className="font-mono">active</span> até você cancelar.
       </p>
+      {dialog}
     </div>
   );
 }
