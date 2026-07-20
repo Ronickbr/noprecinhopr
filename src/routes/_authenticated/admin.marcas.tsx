@@ -5,6 +5,8 @@ import { adminListBrands, adminUpsertBrand, adminDeleteBrand } from "@/lib/admin
 import { PageHeader } from "@/components/admin/ui";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, Globe } from "lucide-react";
+import { useConfirm } from "@/components/admin/confirm-dialog";
+import { getErrorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/admin/marcas")({
   component: BrandsPage,
@@ -17,8 +19,9 @@ const empty: Draft = { slug: "", name: "", logo_url: "", country: "", website: "
 
 function BrandsPage() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["admin-brands"], queryFn: () => adminListBrands() });
+  const { data, isLoading, error, refetch } = useQuery({ queryKey: ["admin-brands"], queryFn: () => adminListBrands() });
   const [editing, setEditing] = useState<Draft | null>(null);
+  const { confirm, dialog } = useConfirm();
 
   const upsert = useMutation({
     mutationFn: (d: Draft) => adminUpsertBrand({ data: {
@@ -26,12 +29,12 @@ function BrandsPage() {
       logo_url: d.logo_url || null, country: d.country || null, website: d.website || null, description: d.description || null,
     } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-brands"] }); toast.success("Marca salva"); setEditing(null); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteBrand({ data: { id } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-brands"] }); toast.success("Marca removida"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   return (
@@ -60,9 +63,14 @@ function BrandsPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {isLoading ? (
-              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Carregando…</td></tr>
+              <tr><td colSpan={6} className="p-6"><div className="mx-auto h-4 w-40 animate-pulse rounded bg-muted" /></td></tr>
+            ) : error ? (
+              <tr><td colSpan={6} className="p-6 text-center">
+                <p className="text-sm text-destructive">{getErrorMessage(error)}</p>
+                <button onClick={() => refetch()} className="mt-2 text-xs text-primary hover:underline">Tentar novamente</button>
+              </td></tr>
             ) : (data ?? []).length === 0 ? (
-              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhuma marca cadastrada.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhuma marca cadastrada. Clique em “Nova marca” para começar.</td></tr>
             ) : (data as Brand[]).map((b) => (
               <tr key={b.id} className="hover:bg-muted/20">
                 <td className="px-4 py-3">
@@ -97,7 +105,7 @@ function BrandsPage() {
                     <button onClick={() => setEditing({ id: b.id, slug: b.slug, name: b.name, logo_url: b.logo_url ?? "", country: b.country ?? "", website: b.website ?? "", description: b.description ?? "", active: b.active })} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
                       <Pencil className="h-3.5 w-3.5" /> Editar
                     </button>
-                    <button onClick={() => { if (confirm(`Remover "${b.name}"?`)) remove.mutate(b.id); }} className="inline-flex items-center gap-1 text-xs text-destructive hover:underline">
+                    <button onClick={async () => { if (await confirm({ title: `Remover "${b.name}"?`, description: "Esta ação não pode ser desfeita.", confirmLabel: "Excluir", destructive: true })) remove.mutate(b.id); }} className="inline-flex items-center gap-1 text-xs text-destructive hover:underline">
                       <Trash2 className="h-3.5 w-3.5" /> Excluir
                     </button>
                   </div>
@@ -147,6 +155,7 @@ function BrandsPage() {
       )}
 
       <style>{`.input { height: 36px; padding: 0 10px; border-radius: 6px; border: 1px solid hsl(var(--input)); background: hsl(var(--background)); font-size: 14px; width: 100%; }`}</style>
+      {dialog}
     </div>
   );
 }

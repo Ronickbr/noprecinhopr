@@ -1,5 +1,62 @@
 import { useEffect, type ReactNode } from "react";
-import { Search, X, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import { Search, X, ArrowUpRight, ArrowDownRight, Minus, Inbox, AlertCircle, RefreshCw } from "lucide-react";
+
+export function EmptyState({
+  icon: Icon = Inbox,
+  title,
+  description,
+  action,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/60 bg-card/40 px-6 py-12 text-center">
+      <div className="grid h-11 w-11 place-items-center rounded-full bg-muted text-muted-foreground">
+        <Icon className="h-5 w-5" />
+      </div>
+      <p className="mt-3 text-sm font-medium">{title}</p>
+      {description && <p className="mt-1 max-w-sm text-xs text-muted-foreground">{description}</p>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+
+export function ErrorState({
+  title = "Não foi possível carregar",
+  description,
+  onRetry,
+}: { title?: string; description?: string; onRetry?: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-10 text-center">
+      <div className="grid h-11 w-11 place-items-center rounded-full bg-destructive/10 text-destructive">
+        <AlertCircle className="h-5 w-5" />
+      </div>
+      <p className="mt-3 text-sm font-medium text-destructive">{title}</p>
+      {description && <p className="mt-1 max-w-sm text-xs text-muted-foreground">{description}</p>}
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-xs font-medium hover:bg-accent"
+        >
+          <RefreshCw className="h-3 w-3" /> Tentar novamente
+        </button>
+      )}
+    </div>
+  );
+}
+
+export function CardSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-2 rounded-xl border border-border/60 bg-card p-5">
+      {Array.from({ length: rows }).map((_, i) => (
+        <div key={i} className="h-4 animate-pulse rounded bg-muted" style={{ width: `${60 + ((i * 13) % 30)}%` }} />
+      ))}
+    </div>
+  );
+}
 
 export function PageHeader({
   title,

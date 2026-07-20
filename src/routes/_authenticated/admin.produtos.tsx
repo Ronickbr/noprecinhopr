@@ -7,6 +7,8 @@ import { PageHeader, SearchInput } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { Trash2, ExternalLink, Package } from "lucide-react";
 import { formatBRL } from "@/lib/format";
+import { useConfirm } from "@/components/admin/confirm-dialog";
+import { getErrorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/admin/produtos")({
   component: ProductsPage,
@@ -22,7 +24,9 @@ function ProductsPage() {
   const [category, setCategory] = useState<string>("");
   const [sort, setSort] = useState<"recent" | "oldest" | "name_asc" | "name_desc">("recent");
 
-  const { data, isLoading } = useQuery({
+  const { confirm, dialog } = useConfirm();
+
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-products", applied, page, category, sort],
     queryFn: () => adminListAllProducts({ data: { q: applied || undefined, page, categorySlug: category || undefined, sort } }),
     retry: false,
@@ -32,7 +36,7 @@ function ProductsPage() {
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteProduct({ data: { id } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-products"] }); toast.success("Produto removido"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const cols: Column<Row>[] = [
@@ -63,7 +67,11 @@ function ProductsPage() {
           <ExternalLink className="h-3 w-3" /> Ver
         </Link>
         <button
-          onClick={(e) => { e.stopPropagation(); if (confirm(`Excluir "${p.name}"?`)) remove.mutate(p.id); }}
+          onClick={async (e) => {
+            e.stopPropagation();
+            const ok = await confirm({ title: `Excluir "${p.name}"?`, description: "O produto será removido do catálogo global.", confirmLabel: "Excluir", destructive: true });
+            if (ok) remove.mutate(p.id);
+          }}
           className="inline-flex h-7 items-center gap-1 rounded-md bg-destructive/10 px-2 text-xs text-destructive hover:bg-destructive/20"
         >
           <Trash2 className="h-3 w-3" /> Excluir
@@ -80,12 +88,15 @@ function ProductsPage() {
         rows={data?.rows}
         columns={cols}
         isLoading={isLoading}
+        error={error}
+        onRetry={() => refetch()}
         getRowId={(p) => p.id}
         page={page}
         pageSize={data?.pageSize}
         total={data?.count}
         onPageChange={setPage}
         emptyMessage="Nenhum produto encontrado."
+        emptyHint={applied || category ? "Ajuste os filtros para ampliar a busca." : undefined}
         toolbar={
           <>
             <SearchInput
@@ -116,6 +127,7 @@ function ProductsPage() {
           </>
         }
       />
+      {dialog}
     </div>
   );
 }

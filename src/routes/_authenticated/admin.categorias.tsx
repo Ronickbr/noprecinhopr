@@ -4,6 +4,8 @@ import { useState } from "react";
 import { adminListCategories, adminUpsertCategory, adminDeleteCategory } from "@/lib/products.functions";
 import { toast } from "sonner";
 import { Trash2, Plus, Save } from "lucide-react";
+import { useConfirm } from "@/components/admin/confirm-dialog";
+import { getErrorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/admin/categorias")({
   component: CategoriesPage,
@@ -14,17 +16,18 @@ type Cat = { id: string; slug: string; name: string; parent_id: string | null; s
 function CategoriesPage() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["admin-categories"], queryFn: () => adminListCategories(), retry: false });
+  const { confirm, dialog } = useConfirm();
 
   const upsert = useMutation({
     mutationFn: (vars: { id?: string; slug: string; name: string; parent_id: string | null; sort_order: number }) =>
       adminUpsertCategory({ data: vars }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-categories"] }); toast.success("Categoria salva"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteCategory({ data: { id } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-categories"] }); toast.success("Categoria removida"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const [draft, setDraft] = useState({ slug: "", name: "", parent_id: "", sort_order: 0 });
@@ -75,11 +78,21 @@ function CategoriesPage() {
             {isLoading ? (
               <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
             ) : (data ?? []).map((c) => (
-              <CategoryRow key={c.id} cat={c} all={data ?? []} onSave={(v) => upsert.mutate(v)} onDelete={() => { if (confirm(`Remover "${c.name}"?`)) remove.mutate(c.id); }} />
+              <CategoryRow
+                key={c.id}
+                cat={c}
+                all={data ?? []}
+                onSave={(v) => upsert.mutate(v)}
+                onDelete={async () => {
+                  const ok = await confirm({ title: `Remover "${c.name}"?`, description: "Produtos e subcategorias vinculados podem ser afetados.", confirmLabel: "Remover", destructive: true });
+                  if (ok) remove.mutate(c.id);
+                }}
+              />
             ))}
           </tbody>
         </table>
       </div>
+      {dialog}
     </div>
   );
 }
