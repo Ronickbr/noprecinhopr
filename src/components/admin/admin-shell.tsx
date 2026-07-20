@@ -169,9 +169,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-1.5">
             <GlobalSearch />
             <ThemeToggle />
-            <button className="grid h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Notificações">
+            <Link
+              to="/admin/solicitacoes"
+              className="relative grid h-9 w-9 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+              aria-label="Solicitações pendentes"
+              title="Solicitações pendentes"
+            >
               <Bell className="h-4 w-4" />
-            </button>
+            </Link>
             <Link
               to="/"
               className="hidden h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex"
