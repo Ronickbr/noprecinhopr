@@ -433,6 +433,7 @@ export type Database = {
       }
       products: {
         Row: {
+          barcode: string | null
           brand: string | null
           brand_id: string | null
           category_id: string | null
@@ -443,9 +444,12 @@ export type Database = {
           name: string
           search_vector: unknown
           slug: string
+          status: string
+          unit: string | null
           updated_at: string
         }
         Insert: {
+          barcode?: string | null
           brand?: string | null
           brand_id?: string | null
           category_id?: string | null
@@ -456,9 +460,12 @@ export type Database = {
           name: string
           search_vector?: unknown
           slug: string
+          status?: string
+          unit?: string | null
           updated_at?: string
         }
         Update: {
+          barcode?: string | null
           brand?: string | null
           brand_id?: string | null
           category_id?: string | null
@@ -469,6 +476,8 @@ export type Database = {
           name?: string
           search_vector?: unknown
           slug?: string
+          status?: string
+          unit?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -578,15 +587,22 @@ export type Database = {
       stores: {
         Row: {
           about: string | null
+          address: string | null
           banner_url: string | null
+          cep: string | null
           city: string | null
           created_at: string
           description: string | null
+          email: string | null
           featured_product_ids: string[]
           id: string
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           name: string
+          opening_hours: string | null
           owner_user_id: string | null
+          phone: string | null
           secondary_banner_url: string | null
           slug: string
           state: string | null
@@ -596,15 +612,22 @@ export type Database = {
         }
         Insert: {
           about?: string | null
+          address?: string | null
           banner_url?: string | null
+          cep?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           featured_product_ids?: string[]
           id?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           name: string
+          opening_hours?: string | null
           owner_user_id?: string | null
+          phone?: string | null
           secondary_banner_url?: string | null
           slug: string
           state?: string | null
@@ -614,15 +637,22 @@ export type Database = {
         }
         Update: {
           about?: string | null
+          address?: string | null
           banner_url?: string | null
+          cep?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           featured_product_ids?: string[]
           id?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           name?: string
+          opening_hours?: string | null
           owner_user_id?: string | null
+          phone?: string | null
           secondary_banner_url?: string | null
           slug?: string
           state?: string | null
