@@ -1017,13 +1017,49 @@ export const adminDeleteCategory = createServerFn({ method: "POST" })
 // ------------ ADMIN: users ------------
 export const adminListUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((raw: unknown) => z.object({
+    q: z.string().optional(),
+    role: z.enum(["all", "admin", "merchant", "user"]).default("all"),
+    page: z.number().int().min(1).default(1),
+  }).parse(raw ?? {}))
+  .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     if (!isAdmin) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [profilesRes, rolesRes] = await Promise.all([
-      supabaseAdmin.from("profiles").select("id, display_name, created_at").order("created_at", { ascending: false }).limit(500),
-      supabaseAdmin.from("user_roles").select("user_id, role"),
+    const pageSize = 50;
+    const from = (data.page - 1) * pageSize;
+
+    // Pre-filter user_ids by role when specified (server-side)
+    let roleFilteredIds: string[] | null = null;
+    if (data.role === "admin" || data.role === "merchant") {
+      const { data: r } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", data.role);
+      roleFilteredIds = [...new Set((r ?? []).map((x) => x.user_id))];
+      if (roleFilteredIds.length === 0) {
+        return { rows: [], count: 0, page: data.page, pageSize };
+      }
+    } else if (data.role === "user") {
+      const { data: r } = await supabaseAdmin.from("user_roles").select("user_id").in("role", ["admin", "merchant"]);
+      const excluded = new Set((r ?? []).map((x) => x.user_id));
+      const { data: allProfiles } = await supabaseAdmin.from("profiles").select("id");
+      roleFilteredIds = (allProfiles ?? []).map((p) => p.id).filter((id) => !excluded.has(id));
+      if (roleFilteredIds.length === 0) {
+        return { rows: [], count: 0, page: data.page, pageSize };
+      }
+    }
+
+    let query = supabaseAdmin.from("profiles").select("id, display_name, created_at", { count: "exact" });
+    if (roleFilteredIds) query = query.in("id", roleFilteredIds);
+    if (data.q) query = query.ilike("display_name", `%${data.q}%`);
+    query = query.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
+
+    const { data: profiles, count } = await query;
+    const pageIds = (profiles ?? []).map((p) => p.id);
+
+    const [rolesRes, authList] = await Promise.all([
+      pageIds.length
+        ? supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", pageIds)
+        : Promise.resolve({ data: [] as { user_id: string; role: string }[] }),
+      supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }).catch(() => ({ data: { users: [] as { id: string; email?: string | null }[] } })),
     ]);
     const rolesByUser = new Map<string, string[]>();
     for (const r of (rolesRes.data ?? []) as { user_id: string; role: string }[]) {
@@ -1031,18 +1067,25 @@ export const adminListUsers = createServerFn({ method: "GET" })
       arr.push(r.role);
       rolesByUser.set(r.user_id, arr);
     }
-    let emails = new Map<string, string>();
-    try {
-      const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      emails = new Map((authList?.users ?? []).map((u) => [u.id, u.email ?? ""]));
-    } catch { /* ignore */ }
-    return (profilesRes.data ?? []).map((p) => ({
+    const emails = new Map((authList?.data?.users ?? []).map((u) => [u.id, u.email ?? ""]));
+
+    const rows = (profiles ?? []).map((p) => ({
       id: p.id,
       display_name: p.display_name,
       email: emails.get(p.id) ?? null,
       created_at: p.created_at,
       roles: rolesByUser.get(p.id) ?? [],
     }));
+
+    // If q also matches emails, do a lightweight additional filter on this page
+    const finalRows = data.q
+      ? rows.filter((u) => {
+          const s = data.q!.toLowerCase();
+          return (u.display_name ?? "").toLowerCase().includes(s) || (u.email ?? "").toLowerCase().includes(s) || u.id.includes(s);
+        })
+      : rows;
+
+    return { rows: finalRows, count: count ?? 0, page: data.page, pageSize };
   });
 
 // ------------ ADMIN: products ------------
