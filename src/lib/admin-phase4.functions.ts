@@ -173,13 +173,42 @@ export const adminFinanceSummary = createServerFn({ method: "GET" })
   });
 
 // ============ REGIONS (Paraná) ============
+export type PRCityRow = { city: string; stores: number; products: number; clicks_30d: number; share_stores: number };
+export type PRDrilldown = {
+  total_stores: number;
+  cities: number;
+  total_products: number;
+  total_clicks_30d: number;
+  top_cities: PRCityRow[];
+  regions: Array<{ region: string; stores: number; products: number; clicks_30d: number }>;
+  concentration_top3_pct: number;
+};
 export type RegionSummary = {
   total_stores: number;
   cities_covered: number;
   by_state: Array<{ state: string; count: number }>;
   by_city: Array<{ city: string; state: string; stores: number; products: number; clicks_30d: number }>;
   uncategorized: number;
+  pr_drilldown: PRDrilldown;
 };
+
+// Meso-regions of Paraná (simplified grouping of principal cities)
+const PR_REGIONS: Record<string, string[]> = {
+  "RMC (Curitiba)": ["curitiba", "sao jose dos pinhais", "são josé dos pinhais", "colombo", "araucaria", "araucária", "pinhais", "campo largo", "fazenda rio grande", "piraquara"],
+  "Norte (Londrina)": ["londrina", "cambe", "cambé", "rolandia", "rolândia", "arapongas", "apucarana", "ibipora", "ibiporã"],
+  "Noroeste (Maringá)": ["maringa", "maringá", "sarandi", "paicandu", "paiçandu", "cianorte", "umuarama", "paranavai", "paranavaí"],
+  "Oeste (Cascavel/Foz)": ["cascavel", "foz do iguacu", "foz do iguaçu", "toledo", "marechal candido rondon", "marechal cândido rondon", "medianeira"],
+  "Sudoeste (Pato Branco)": ["pato branco", "francisco beltrao", "francisco beltrão", "dois vizinhos"],
+  "Campos Gerais (Ponta Grossa)": ["ponta grossa", "castro", "telemaco borba", "telêmaco borba", "irati"],
+  "Litoral": ["paranagua", "paranaguá", "matinhos", "guaratuba", "pontal do parana", "pontal do paraná"],
+};
+function classifyPRRegion(city: string): string {
+  const c = city.trim().toLowerCase();
+  for (const [region, cities] of Object.entries(PR_REGIONS)) {
+    if (cities.includes(c)) return region;
+  }
+  return "Interior";
+}
 
 export const adminRegionSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -204,7 +233,6 @@ export const adminRegionSummary = createServerFn({ method: "GET" })
       byCity.set(key, cur);
     }
 
-    // offers count per store owner via offers join
     const { data: offers } = await db.from("offers").select("store_id");
     const offerCount = new Map<string, number>();
     for (const o of ((offers ?? []) as Array<{ store_id: string }>)) {
@@ -219,7 +247,6 @@ export const adminRegionSummary = createServerFn({ method: "GET" })
       if (key) cityProducts.set(key, (cityProducts.get(key) ?? 0) + cnt);
     }
 
-    // clicks 30d per city via offers join
     const d30 = new Date(Date.now() - 30 * 86400_000).toISOString();
     const { data: clicks } = await db.from("clicks").select("offer_id, created_at").gte("created_at", d30);
     const { data: offers2 } = await db.from("offers").select("id, store_id");
@@ -232,16 +259,50 @@ export const adminRegionSummary = createServerFn({ method: "GET" })
       if (key) cityClicks.set(key, (cityClicks.get(key) ?? 0) + 1);
     }
 
+    const byCityArr = Array.from(byCity.values()).map((c) => ({
+      ...c,
+      products: cityProducts.get(`${c.state}::${c.city}`) ?? 0,
+      clicks_30d: cityClicks.get(`${c.state}::${c.city}`) ?? 0,
+    })).sort((a, b) => b.stores - a.stores);
+
+    // Paraná drill-down
+    const prCities = byCityArr.filter((c) => c.state === "PR");
+    const prTotalStores = prCities.reduce((a, c) => a + c.stores, 0);
+    const prTotalProducts = prCities.reduce((a, c) => a + c.products, 0);
+    const prTotalClicks = prCities.reduce((a, c) => a + c.clicks_30d, 0);
+    const topCities: PRCityRow[] = prCities.slice(0, 15).map((c) => ({
+      city: c.city, stores: c.stores, products: c.products, clicks_30d: c.clicks_30d,
+      share_stores: prTotalStores > 0 ? Math.round((c.stores / prTotalStores) * 10000) / 100 : 0,
+    }));
+    const top3 = prCities.slice(0, 3).reduce((a, c) => a + c.stores, 0);
+    const concentration = prTotalStores > 0 ? Math.round((top3 / prTotalStores) * 10000) / 100 : 0;
+
+    const regionMap = new Map<string, { stores: number; products: number; clicks_30d: number }>();
+    for (const c of prCities) {
+      const key = classifyPRRegion(c.city);
+      const cur = regionMap.get(key) ?? { stores: 0, products: 0, clicks_30d: 0 };
+      cur.stores += c.stores; cur.products += c.products; cur.clicks_30d += c.clicks_30d;
+      regionMap.set(key, cur);
+    }
+    const regions = Array.from(regionMap.entries())
+      .map(([region, v]) => ({ region, ...v }))
+      .sort((a, b) => b.stores - a.stores);
+
     return {
       total_stores: s.length,
       cities_covered: byCity.size,
       by_state: Array.from(byState.entries()).map(([state, count]) => ({ state, count })).sort((a, b) => b.count - a.count),
-      by_city: Array.from(byCity.values()).map((c) => ({
-        ...c,
-        products: cityProducts.get(`${c.state}::${c.city}`) ?? 0,
-        clicks_30d: cityClicks.get(`${c.state}::${c.city}`) ?? 0,
-      })).sort((a, b) => b.stores - a.stores),
+      by_city: byCityArr,
       uncategorized: uncat,
+      pr_drilldown: {
+        total_stores: prTotalStores,
+        cities: prCities.length,
+        total_products: prTotalProducts,
+        total_clicks_30d: prTotalClicks,
+        top_cities: topCities,
+        regions,
+        concentration_top3_pct: concentration,
+      },
     };
   });
 
