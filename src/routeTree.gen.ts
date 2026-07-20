@@ -20,6 +20,7 @@ import { Route as ProdutoSlugRouteImport } from './routes/produto.$slug'
 import { Route as LojaSlugRouteImport } from './routes/loja.$slug'
 import { Route as CategoriaSlugRouteImport } from './routes/categoria.$slug'
 import { Route as AuthenticatedMinhaContaRouteImport } from './routes/_authenticated/minha-conta'
+import { Route as AuthenticatedLojistaRouteImport } from './routes/_authenticated/lojista'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedLojistaIndexRouteImport } from './routes/_authenticated/lojista.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
@@ -100,6 +101,11 @@ const AuthenticatedMinhaContaRoute = AuthenticatedMinhaContaRouteImport.update({
   path: '/minha-conta',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLojistaRoute = AuthenticatedLojistaRouteImport.update({
+  id: '/lojista',
+  path: '/lojista',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -107,9 +113,9 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
 } as any)
 const AuthenticatedLojistaIndexRoute =
   AuthenticatedLojistaIndexRouteImport.update({
-    id: '/lojista/',
-    path: '/lojista/',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedLojistaRoute,
   } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -141,9 +147,9 @@ const AuthenticatedMinhaContaAlertasRoute =
   } as any)
 const AuthenticatedLojistaAssinaturaRoute =
   AuthenticatedLojistaAssinaturaRouteImport.update({
-    id: '/lojista/assinatura',
-    path: '/lojista/assinatura',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    id: '/assinatura',
+    path: '/assinatura',
+    getParentRoute: () => AuthenticatedLojistaRoute,
   } as any)
 const AuthenticatedAdminUsuariosRoute =
   AuthenticatedAdminUsuariosRouteImport.update({
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/lojista': typeof AuthenticatedLojistaRouteWithChildren
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/loja/$slug': typeof LojaSlugRoute
@@ -329,6 +336,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/termos': typeof TermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/lojista': typeof AuthenticatedLojistaRouteWithChildren
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/loja/$slug': typeof LojaSlugRoute
@@ -368,6 +376,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/termos'
     | '/admin'
+    | '/lojista'
     | '/minha-conta'
     | '/categoria/$slug'
     | '/loja/$slug'
@@ -442,6 +451,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/termos'
     | '/_authenticated/admin'
+    | '/_authenticated/lojista'
     | '/_authenticated/minha-conta'
     | '/categoria/$slug'
     | '/loja/$slug'
@@ -565,6 +575,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMinhaContaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lojista': {
+      id: '/_authenticated/lojista'
+      path: '/lojista'
+      fullPath: '/lojista'
+      preLoaderRoute: typeof AuthenticatedLojistaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -574,10 +591,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/lojista/': {
       id: '/_authenticated/lojista/'
-      path: '/lojista'
+      path: '/'
       fullPath: '/lojista/'
       preLoaderRoute: typeof AuthenticatedLojistaIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedLojistaRoute
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -616,10 +633,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/lojista/assinatura': {
       id: '/_authenticated/lojista/assinatura'
-      path: '/lojista/assinatura'
+      path: '/assinatura'
       fullPath: '/lojista/assinatura'
       preLoaderRoute: typeof AuthenticatedLojistaAssinaturaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      parentRoute: typeof AuthenticatedLojistaRoute
     }
     '/_authenticated/admin/usuarios': {
       id: '/_authenticated/admin/usuarios'
@@ -788,6 +805,19 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
+interface AuthenticatedLojistaRouteChildren {
+  AuthenticatedLojistaAssinaturaRoute: typeof AuthenticatedLojistaAssinaturaRoute
+  AuthenticatedLojistaIndexRoute: typeof AuthenticatedLojistaIndexRoute
+}
+
+const AuthenticatedLojistaRouteChildren: AuthenticatedLojistaRouteChildren = {
+  AuthenticatedLojistaAssinaturaRoute: AuthenticatedLojistaAssinaturaRoute,
+  AuthenticatedLojistaIndexRoute: AuthenticatedLojistaIndexRoute,
+}
+
+const AuthenticatedLojistaRouteWithChildren =
+  AuthenticatedLojistaRoute._addFileChildren(AuthenticatedLojistaRouteChildren)
+
 interface AuthenticatedMinhaContaRouteChildren {
   AuthenticatedMinhaContaAlertasRoute: typeof AuthenticatedMinhaContaAlertasRoute
   AuthenticatedMinhaContaFavoritosRoute: typeof AuthenticatedMinhaContaFavoritosRoute
@@ -810,16 +840,14 @@ const AuthenticatedMinhaContaRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedLojistaRoute: typeof AuthenticatedLojistaRouteWithChildren
   AuthenticatedMinhaContaRoute: typeof AuthenticatedMinhaContaRouteWithChildren
-  AuthenticatedLojistaAssinaturaRoute: typeof AuthenticatedLojistaAssinaturaRoute
-  AuthenticatedLojistaIndexRoute: typeof AuthenticatedLojistaIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedLojistaRoute: AuthenticatedLojistaRouteWithChildren,
   AuthenticatedMinhaContaRoute: AuthenticatedMinhaContaRouteWithChildren,
-  AuthenticatedLojistaAssinaturaRoute: AuthenticatedLojistaAssinaturaRoute,
-  AuthenticatedLojistaIndexRoute: AuthenticatedLojistaIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

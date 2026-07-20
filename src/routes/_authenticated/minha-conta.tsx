@@ -1,4 +1,6 @@
-import { createFileRoute, Link, Outlet, useLocation, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { Heart, Bell, ShieldCheck, UserCircle } from "lucide-react";
+import { PanelShell, type PanelNavGroup } from "@/components/panel-shell";
 
 export const Route = createFileRoute("/_authenticated/minha-conta")({
   head: () => ({ meta: [{ title: "Minha conta — PrecinhoBom" }, { name: "robots", content: "noindex" }] }),
@@ -10,30 +12,35 @@ export const Route = createFileRoute("/_authenticated/minha-conta")({
   component: Layout,
 });
 
+const NAV: PanelNavGroup[] = [
+  {
+    section: "Conta",
+    items: [
+      { to: "/minha-conta/favoritos", label: "Favoritos", icon: Heart },
+      { to: "/minha-conta/alertas", label: "Alertas de preço", icon: Bell },
+    ],
+  },
+  {
+    section: "Segurança",
+    items: [
+      { to: "/minha-conta/privacidade", label: "Privacidade", icon: ShieldCheck },
+    ],
+  },
+];
+
 function Layout() {
-  const { pathname } = useLocation();
-  const tabs = [
-    { to: "/minha-conta/favoritos", label: "Favoritos" },
-    { to: "/minha-conta/alertas", label: "Alertas" },
-    { to: "/minha-conta/privacidade", label: "Privacidade" },
-  ] as const;
   return (
-    <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
-      <h1 className="font-serif text-3xl font-semibold text-foreground">Minha conta</h1>
-      <div className="mt-6 flex gap-1 border-b border-border">
-        {tabs.map((t) => (
-          <Link
-            key={t.to}
-            to={t.to}
-            className={`px-4 py-2 text-sm border-b-2 -mb-px ${pathname === t.to ? "border-primary text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-          >
-            {t.label}
-          </Link>
-        ))}
-      </div>
-      <div className="mt-6">
+    <PanelShell
+      title="PrecinhoBom"
+      subtitle="Minha conta"
+      accentIcon={UserCircle}
+      nav={NAV}
+      storageKey="conta-sidebar-collapsed"
+      homeHref="/minha-conta/favoritos"
+    >
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">
         <Outlet />
       </div>
-    </div>
+    </PanelShell>
   );
 }
