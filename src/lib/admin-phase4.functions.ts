@@ -15,6 +15,14 @@ export type FinanceAlert = {
   title: string;
   message: string;
   metric?: string;
+  category: "churn" | "revenue" | "billing" | "conversion" | "growth" | "system";
+  threshold?: string;
+  current?: string;
+  context: string;
+  impact: string;
+  recommendations: string[];
+  related_metrics: Array<{ label: string; value: string }>;
+  severity_score: number; // 0-100
 };
 export type FinanceSummary = {
   mrr_cents: number;
@@ -130,16 +138,188 @@ export const adminFinanceSummary = createServerFn({ method: "GET" })
     const curMrr = trend.length ? trend[trend.length - 1].mrr_cents : 0;
     const mrrDeltaPct = prevMrr > 0 ? Math.round(((curMrr - prevMrr) / prevMrr) * 10000) / 100 : 0;
 
+    const totalBase = active + canceled30;
     const alerts: FinanceAlert[] = [];
-    if (churn > 5) alerts.push({ id: "churn-high", level: "critical", title: "Churn acima do limite", message: `Taxa de cancelamento de ${churn.toFixed(2)}% nos últimos 30 dias.`, metric: `${churn.toFixed(1)}%` });
-    else if (churn > 3) alerts.push({ id: "churn-warn", level: "warning", title: "Churn em alerta", message: `Churn de ${churn.toFixed(2)}% — monitorar retenção.`, metric: `${churn.toFixed(1)}%` });
-    if (mrrDeltaPct < -5) alerts.push({ id: "mrr-drop", level: "critical", title: "Queda de MRR", message: `MRR caiu ${Math.abs(mrrDeltaPct)}% em relação ao mês anterior.`, metric: `${mrrDeltaPct}%` });
-    else if (mrrDeltaPct < 0) alerts.push({ id: "mrr-slip", level: "warning", title: "MRR em leve queda", message: `Variação de ${mrrDeltaPct}% no mês.`, metric: `${mrrDeltaPct}%` });
-    if (overdueCount > 0) alerts.push({ id: "overdue", level: "critical", title: "Assinaturas vencidas", message: `${overdueCount} assinatura(s) com pagamento pendente ou vencido.`, metric: String(overdueCount) });
-    if (renewals7Count >= 5) alerts.push({ id: "renew-7", level: "info", title: "Renovações concentradas", message: `${renewals7Count} renovações nos próximos 7 dias (${(renewals7Cents / 100).toFixed(2)} BRL).`, metric: String(renewals7Count) });
-    if (trialsExpiring7 > 0) alerts.push({ id: "trials-7", level: "warning", title: "Trials expirando", message: `${trialsExpiring7} trial(s) terminam em até 7 dias — oportunidade de conversão.`, metric: String(trialsExpiring7) });
-    if (active === 0) alerts.push({ id: "no-active", level: "warning", title: "Sem assinantes ativos", message: "Nenhuma assinatura ativa no momento.", metric: "0" });
-    if (!alerts.length) alerts.push({ id: "ok", level: "info", title: "Tudo estável", message: "Nenhum alerta financeiro no momento.", metric: "OK" });
+    if (churn > 5) alerts.push({
+      id: "churn-high", level: "critical", category: "churn",
+      title: "Churn acima do limite crítico",
+      message: `Taxa de cancelamento de ${churn.toFixed(2)}% nos últimos 30 dias.`,
+      metric: `${churn.toFixed(1)}%`,
+      threshold: "≤ 5% ao mês (limite crítico)",
+      current: `${churn.toFixed(2)}% (${canceled30} de ${totalBase})`,
+      context: `Nos últimos 30 dias, ${canceled30} assinatura(s) foram canceladas contra ${active} ativa(s). Um churn acima de 5% indica perda estrutural da base e compromete o crescimento líquido do MRR.`,
+      impact: `Se mantido, projeta perda anual de ~${Math.round(churn * 12)}% da base atual — equivalente a ${(mrr / 100).toFixed(2)} BRL de MRR em risco nos próximos 12 meses.`,
+      recommendations: [
+        "Abrir pesquisa de cancelamento (motivo + NPS) para os últimos 30 dias",
+        "Contatar 1-a-1 os lojistas cancelados nas últimas 2 semanas (win-back)",
+        "Revisar preços do plano com maior churn e testar oferta de retenção",
+        "Auditar erros/bugs recentes no painel do lojista que possam ter gerado fricção",
+      ],
+      related_metrics: [
+        { label: "Cancelados 30d", value: String(canceled30) },
+        { label: "Base ativa", value: String(active) },
+        { label: "MRR em risco (anual)", value: `${((mrr * churn * 12) / 10000).toFixed(2)} BRL` },
+      ],
+      severity_score: Math.min(100, 60 + Math.round(churn * 4)),
+    });
+    else if (churn > 3) alerts.push({
+      id: "churn-warn", level: "warning", category: "churn",
+      title: "Churn em zona de alerta",
+      message: `Churn de ${churn.toFixed(2)}% — monitorar retenção.`,
+      metric: `${churn.toFixed(1)}%`,
+      threshold: "3% a 5% ao mês (alerta)",
+      current: `${churn.toFixed(2)}%`,
+      context: `O churn subiu acima da faixa saudável (< 3%) mas ainda não atingiu o nível crítico. É o momento ideal de agir antes que se torne estrutural.`,
+      impact: `Projeção anualizada de ${(churn * 12).toFixed(0)}% de perda de base — pressão sobre CAC/LTV.`,
+      recommendations: [
+        "Segmentar cancelamentos por plano e por tempo de casa",
+        "Iniciar campanha de reengajamento para lojistas com < 30 dias",
+        "Revisar onboarding e primeiros 7 dias de uso",
+      ],
+      related_metrics: [
+        { label: "Cancelados 30d", value: String(canceled30) },
+        { label: "Base ativa", value: String(active) },
+      ],
+      severity_score: 40 + Math.round(churn * 4),
+    });
+    if (mrrDeltaPct < -5) alerts.push({
+      id: "mrr-drop", level: "critical", category: "revenue",
+      title: "Queda expressiva de MRR",
+      message: `MRR caiu ${Math.abs(mrrDeltaPct)}% em relação ao mês anterior.`,
+      metric: `${mrrDeltaPct}%`,
+      threshold: "≥ -5% mês a mês",
+      current: `${mrrDeltaPct}% (${(curMrr / 100).toFixed(2)} vs ${(prevMrr / 100).toFixed(2)} BRL)`,
+      context: `O MRR do mês corrente está ${Math.abs(mrrDeltaPct)}% abaixo do mês anterior. Combinado com o histórico de trend (6 meses), indica reversão de crescimento.`,
+      impact: `Perda mensal estimada de ${((prevMrr - curMrr) / 100).toFixed(2)} BRL — ${(((prevMrr - curMrr) * 12) / 100).toFixed(2)} BRL/ano se sustentado.`,
+      recommendations: [
+        "Comparar cancelamentos vs downgrades vs novas assinaturas do mês",
+        "Verificar falhas de cobrança (past_due) e recuperação de pagamentos",
+        "Reforçar aquisição via campanhas de novos lojistas",
+      ],
+      related_metrics: [
+        { label: "MRR atual", value: `${(curMrr / 100).toFixed(2)} BRL` },
+        { label: "MRR mês anterior", value: `${(prevMrr / 100).toFixed(2)} BRL` },
+        { label: "Variação", value: `${mrrDeltaPct}%` },
+      ],
+      severity_score: Math.min(100, 65 + Math.abs(mrrDeltaPct)),
+    });
+    else if (mrrDeltaPct < 0) alerts.push({
+      id: "mrr-slip", level: "warning", category: "revenue",
+      title: "MRR em leve queda",
+      message: `Variação de ${mrrDeltaPct}% no mês.`,
+      metric: `${mrrDeltaPct}%`,
+      threshold: "Manter ≥ 0% mês a mês",
+      current: `${mrrDeltaPct}%`,
+      context: `Ligeira contração da receita recorrente. Ainda dentro da faixa recuperável, mas requer atenção antes do fechamento do mês.`,
+      impact: `Sinal precoce de estagnação — monitorar próximas 2 semanas.`,
+      recommendations: [
+        "Ativar upsell nos planos Starter → Pro",
+        "Ofertar plano anual com desconto para retenção",
+      ],
+      related_metrics: [
+        { label: "MRR atual", value: `${(curMrr / 100).toFixed(2)} BRL` },
+        { label: "MRR anterior", value: `${(prevMrr / 100).toFixed(2)} BRL` },
+      ],
+      severity_score: 30 + Math.abs(mrrDeltaPct) * 2,
+    });
+    if (overdueCount > 0) alerts.push({
+      id: "overdue", level: "critical", category: "billing",
+      title: "Assinaturas vencidas ou em atraso",
+      message: `${overdueCount} assinatura(s) com pagamento pendente ou vencido.`,
+      metric: String(overdueCount),
+      threshold: "0 vencidas",
+      current: `${overdueCount} assinatura(s)`,
+      context: `Assinaturas com current_period_end no passado ou status past_due permanecem consumindo recursos sem receita reconhecida.`,
+      impact: `MRR reportado pode estar inflado. Risco de churn involuntário se cobrança não for regularizada em até 7 dias.`,
+      recommendations: [
+        "Disparar notificação por e-mail para atualizar meio de pagamento",
+        "Retentar cobrança automática (dunning) em D+1, D+3, D+7",
+        "Suspender acesso após 10 dias de vencido para forçar regularização",
+      ],
+      related_metrics: [
+        { label: "Vencidas", value: String(overdueCount) },
+        { label: "% da base ativa", value: active > 0 ? `${((overdueCount / active) * 100).toFixed(1)}%` : "—" },
+      ],
+      severity_score: Math.min(100, 55 + overdueCount * 5),
+    });
+    if (renewals7Count >= 5) alerts.push({
+      id: "renew-7", level: "info", category: "billing",
+      title: "Renovações concentradas nos próximos 7 dias",
+      message: `${renewals7Count} renovações nos próximos 7 dias (${(renewals7Cents / 100).toFixed(2)} BRL).`,
+      metric: String(renewals7Count),
+      threshold: "Informativo (planejamento de caixa)",
+      current: `${renewals7Count} renovações / ${(renewals7Cents / 100).toFixed(2)} BRL`,
+      context: `Volume relevante de renovações agendadas — importante garantir infraestrutura de cobrança e comunicação prévia aos lojistas.`,
+      impact: `Falha de processamento pode gerar pico artificial de churn involuntário.`,
+      recommendations: [
+        "Confirmar saúde do gateway de pagamento",
+        "Enviar lembrete 3 dias antes da renovação",
+      ],
+      related_metrics: [
+        { label: "Qtd. renovações", value: String(renewals7Count) },
+        { label: "Valor total", value: `${(renewals7Cents / 100).toFixed(2)} BRL` },
+        { label: "Ticket médio", value: renewals7Count > 0 ? `${(renewals7Cents / renewals7Count / 100).toFixed(2)} BRL` : "—" },
+      ],
+      severity_score: 20,
+    });
+    if (trialsExpiring7 > 0) alerts.push({
+      id: "trials-7", level: "warning", category: "conversion",
+      title: "Trials expirando em até 7 dias",
+      message: `${trialsExpiring7} trial(s) terminam em até 7 dias — oportunidade de conversão.`,
+      metric: String(trialsExpiring7),
+      threshold: "Converter ≥ 30% dos trials",
+      current: `${trialsExpiring7} trial(s) na janela`,
+      context: `Janela crítica de conversão: lojistas em trial que não forem contatados até o fim do período tendem a evadir silenciosamente.`,
+      impact: `Cada trial não convertido representa CAC perdido. Potencial de +${(trialsExpiring7 * 0.3).toFixed(0)} novos assinantes se hit a meta de 30%.`,
+      recommendations: [
+        "Enviar e-mail personalizado 3 dias antes do fim do trial",
+        "Ofertar desconto de primeiro mês para acelerar decisão",
+        "Ligar/WhatsApp para trials com uso alto do painel",
+      ],
+      related_metrics: [
+        { label: "Trials expirando", value: String(trialsExpiring7) },
+        { label: "Total em trial", value: String(trial) },
+      ],
+      severity_score: 45 + trialsExpiring7 * 3,
+    });
+    if (active === 0) alerts.push({
+      id: "no-active", level: "warning", category: "growth",
+      title: "Sem assinantes ativos",
+      message: "Nenhuma assinatura ativa no momento.",
+      metric: "0",
+      threshold: "≥ 1 assinatura ativa",
+      current: "0 ativas",
+      context: `Plataforma sem receita recorrente. Fase de aquisição inicial ou perda total de base.`,
+      impact: `MRR = 0. Necessário focar em aquisição imediata para viabilizar operação.`,
+      recommendations: [
+        "Executar campanha de aquisição direcionada",
+        "Revisar landing e proposta de valor dos planos",
+        "Ativar rede de indicação e parcerias",
+      ],
+      related_metrics: [
+        { label: "Ativos", value: "0" },
+        { label: "Em trial", value: String(trial) },
+      ],
+      severity_score: 70,
+    });
+    if (!alerts.length) alerts.push({
+      id: "ok", level: "info", category: "system",
+      title: "Tudo estável",
+      message: "Nenhum alerta financeiro no momento.",
+      metric: "OK",
+      context: `Todos os indicadores monitorados (churn, MRR, cobrança, trials e renovações) estão dentro dos limiares saudáveis.`,
+      impact: `Operação financeira em regime normal — foco pode ir para crescimento.`,
+      recommendations: [
+        "Aproveitar estabilidade para investir em aquisição",
+        "Rodar experimentos de upsell com risco controlado",
+      ],
+      related_metrics: [
+        { label: "MRR", value: `${(mrr / 100).toFixed(2)} BRL` },
+        { label: "Ativos", value: String(active) },
+        { label: "Churn", value: `${churn.toFixed(2)}%` },
+      ],
+      severity_score: 5,
+    });
 
     return {
       mrr_cents: mrr,

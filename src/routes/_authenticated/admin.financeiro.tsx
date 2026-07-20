@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader, StatCard } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
-import { adminFinanceSummary, type FinanceSummary } from "@/lib/admin-phase4.functions";
+import { adminFinanceSummary, type FinanceSummary, type FinanceAlert } from "@/lib/admin-phase4.functions";
 import { formatBRL } from "@/lib/format";
-import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock, AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
+import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock, AlertTriangle, AlertCircle, Info, CheckCircle2, ChevronDown, Target, Activity, Lightbulb, BarChart3 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, Legend,
@@ -56,32 +57,14 @@ function FinanceiroPage() {
       {d?.alerts && d.alerts.length > 0 && (
         <div className="rounded-xl border border-border/60 bg-card p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-warning" /> Alertas financeiros</h3>
+            <div>
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-warning" /> Alertas financeiros</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">Clique em um alerta para ver contexto, impacto e ações recomendadas.</p>
+            </div>
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{d.alerts.length} sinal(is)</span>
           </div>
-          <div className="grid gap-2 md:grid-cols-2">
-            {d.alerts.map((a) => {
-              const styles = a.level === "critical"
-                ? { border: "border-destructive/40", bg: "bg-destructive/5", icon: AlertCircle, iconColor: "text-destructive" }
-                : a.level === "warning"
-                ? { border: "border-warning/40", bg: "bg-warning/5", icon: AlertTriangle, iconColor: "text-warning" }
-                : a.id === "ok"
-                ? { border: "border-success/40", bg: "bg-success/5", icon: CheckCircle2, iconColor: "text-success" }
-                : { border: "border-border/60", bg: "bg-muted/30", icon: Info, iconColor: "text-muted-foreground" };
-              const Icon = styles.icon;
-              return (
-                <div key={a.id} className={`flex items-start gap-3 rounded-lg border ${styles.border} ${styles.bg} p-3`}>
-                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${styles.iconColor}`} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">{a.title}</p>
-                      {a.metric && <span className="font-mono text-[11px] text-muted-foreground">{a.metric}</span>}
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{a.message}</p>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="space-y-2">
+            {d.alerts.map((a) => <AlertCard key={a.id} alert={a} />)}
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/40 pt-3 md:grid-cols-4">
             <MiniKpi label="Renov. 7d" value={String(d.renewals_7d_count)} hint={formatBRL(d.renewals_7d_cents / 100)} />
@@ -161,6 +144,106 @@ function MiniKpi({ label, value, hint, tone }: { label: string; value: string; h
       <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
       <div className={`mt-0.5 font-mono text-base tabular-nums ${color}`}>{value}</div>
       {hint && <div className="text-[10px] text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
+
+function AlertCard({ alert: a }: { alert: FinanceAlert }) {
+  const [open, setOpen] = useState(a.level === "critical");
+  const styles = a.level === "critical"
+    ? { border: "border-destructive/40", bg: "bg-destructive/5", icon: AlertCircle, iconColor: "text-destructive", badge: "bg-destructive/10 text-destructive" }
+    : a.level === "warning"
+    ? { border: "border-warning/40", bg: "bg-warning/5", icon: AlertTriangle, iconColor: "text-warning", badge: "bg-warning/10 text-warning" }
+    : a.id === "ok"
+    ? { border: "border-success/40", bg: "bg-success/5", icon: CheckCircle2, iconColor: "text-success", badge: "bg-success/10 text-success" }
+    : { border: "border-border/60", bg: "bg-muted/30", icon: Info, iconColor: "text-muted-foreground", badge: "bg-muted text-muted-foreground" };
+  const Icon = styles.icon;
+  const sevColor = a.severity_score >= 70 ? "bg-destructive" : a.severity_score >= 40 ? "bg-warning" : "bg-success";
+
+  return (
+    <div className={`rounded-lg border ${styles.border} ${styles.bg} transition-shadow ${open ? "shadow-sm" : ""}`}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-3 p-3 text-left"
+        aria-expanded={open}
+      >
+        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${styles.iconColor}`} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium">{a.title}</p>
+            <span className={`rounded-full px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest ${styles.badge}`}>{a.level}</span>
+            <span className="rounded-full bg-muted/60 px-2 py-0.5 font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{a.category}</span>
+            {a.metric && <span className="ml-auto font-mono text-[11px] text-muted-foreground">{a.metric}</span>}
+          </div>
+          <p className="mt-0.5 text-xs text-muted-foreground">{a.message}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="h-1 flex-1 overflow-hidden rounded-full bg-border/60">
+              <div className={`h-full ${sevColor} transition-all`} style={{ width: `${Math.min(100, a.severity_score)}%` }} />
+            </div>
+            <span className="font-mono text-[10px] text-muted-foreground">sev {a.severity_score}</span>
+          </div>
+        </div>
+        <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="space-y-3 border-t border-border/40 px-3 py-3">
+          {(a.threshold || a.current) && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {a.threshold && (
+                <DetailBlock icon={Target} label="Limiar">
+                  <span className="font-mono text-xs">{a.threshold}</span>
+                </DetailBlock>
+              )}
+              {a.current && (
+                <DetailBlock icon={Activity} label="Valor atual">
+                  <span className="font-mono text-xs">{a.current}</span>
+                </DetailBlock>
+              )}
+            </div>
+          )}
+          <DetailBlock icon={Info} label="Contexto">
+            <p className="text-xs leading-relaxed text-foreground/90">{a.context}</p>
+          </DetailBlock>
+          <DetailBlock icon={AlertCircle} label="Impacto">
+            <p className="text-xs leading-relaxed text-foreground/90">{a.impact}</p>
+          </DetailBlock>
+          <DetailBlock icon={Lightbulb} label="Ações recomendadas">
+            <ul className="space-y-1">
+              {a.recommendations.map((r, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-foreground/90">
+                  <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-current opacity-60" />
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          </DetailBlock>
+          {a.related_metrics.length > 0 && (
+            <DetailBlock icon={BarChart3} label="Métricas relacionadas">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {a.related_metrics.map((m, i) => (
+                  <div key={i} className="rounded border border-border/50 bg-background/60 px-2 py-1.5">
+                    <div className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">{m.label}</div>
+                    <div className="mt-0.5 font-mono text-xs tabular-nums">{m.value}</div>
+                  </div>
+                ))}
+              </div>
+            </DetailBlock>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailBlock({ icon: Icon, label, children }: { icon: React.ComponentType<{ className?: string }>; label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center gap-1.5 text-muted-foreground">
+        <Icon className="h-3 w-3" />
+        <span className="font-mono text-[10px] uppercase tracking-widest">{label}</span>
+      </div>
+      <div className="pl-4">{children}</div>
     </div>
   );
 }
