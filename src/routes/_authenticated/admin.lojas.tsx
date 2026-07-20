@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { PageHeader, SearchInput, SideSheet, StatusBadge, Section } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { Star, Trash2, ExternalLink, ShieldCheck, ShieldX } from "lucide-react";
+import { useConfirm } from "@/components/admin/confirm-dialog";
+import { getErrorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/admin/lojas")({
   component: LojasPage,
@@ -23,8 +25,9 @@ function LojasPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "approved" | "pending" | "suspended">("all");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Merchant | null>(null);
+  const { confirm, dialog } = useConfirm();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-merchants", applied, statusFilter, page],
     queryFn: () => adminListMerchants({ data: { q: applied || undefined, status: statusFilter, page } }),
     retry: false,
@@ -36,27 +39,27 @@ function LojasPage() {
   const setStatus = useMutation({
     mutationFn: (vars: { id: string; status: "pending" | "approved" | "suspended" }) => adminSetStoreStatus({ data: vars }),
     onSuccess: () => { invalidate(); toast.success("Status atualizado"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteStore({ data: { id } }),
     onSuccess: () => { invalidate(); toast.success("Loja excluída"); setSelected(null); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
   const setTrust = useMutation({
     mutationFn: (vars: { id: string; trust_score: number }) => adminSetTrustScore({ data: vars }),
     onSuccess: () => { invalidate(); toast.success("Confiança atualizada"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
   const setSub = useMutation({
     mutationFn: (vars: { user_id: string; plan_id: string | null; status: "trialing" | "active" | "canceled" | "past_due" | "expired" }) => adminSetSubscription({ data: vars }),
     onSuccess: () => { invalidate(); toast.success("Assinatura atualizada"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
   const grantRole = useMutation({
     mutationFn: (vars: { user_id: string; role: "admin" | "merchant" | "user"; action: "grant" | "revoke" }) => adminGrantRole({ data: vars }),
     onSuccess: () => { invalidate(); toast.success("Papel atualizado"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const cols: Column<Merchant>[] = [
