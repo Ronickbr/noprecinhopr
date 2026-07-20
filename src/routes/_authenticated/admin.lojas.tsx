@@ -220,6 +220,7 @@ function LojasPage() {
           </div>
         )}
       </SideSheet>
+      {dialog}
     </div>
   );
 }
