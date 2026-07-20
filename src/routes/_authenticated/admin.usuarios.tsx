@@ -3,16 +3,21 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { adminListUsers, adminGrantRole } from "@/lib/products.functions";
 import { toast } from "sonner";
-import { Search, ShieldPlus, ShieldMinus } from "lucide-react";
+import { PageHeader, SearchInput } from "@/components/admin/ui";
+import { DataTable, type Column } from "@/components/admin/data-table";
+import { ShieldPlus, ShieldMinus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   component: UsersPage,
 });
 
+type User = NonNullable<Awaited<ReturnType<typeof adminListUsers>>>[number];
+
 function UsersPage() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({ queryKey: ["admin-users"], queryFn: () => adminListUsers(), retry: false });
   const [q, setQ] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "merchant" | "user">("all");
 
   const grant = useMutation({
     mutationFn: (vars: { user_id: string; role: "admin" | "merchant" | "user"; action: "grant" | "revoke" }) => adminGrantRole({ data: vars }),
@@ -21,76 +26,104 @@ function UsersPage() {
   });
 
   const filtered = useMemo(() => {
-    const list = data ?? [];
-    if (!q.trim()) return list;
-    const s = q.toLowerCase();
-    return list.filter((u) => (u.display_name ?? "").toLowerCase().includes(s) || (u.email ?? "").toLowerCase().includes(s) || u.id.includes(s));
-  }, [data, q]);
+    let list = data ?? [];
+    if (roleFilter !== "all") {
+      list = roleFilter === "user"
+        ? list.filter((u) => !u.roles.includes("admin") && !u.roles.includes("merchant"))
+        : list.filter((u) => u.roles.includes(roleFilter));
+    }
+    if (q.trim()) {
+      const s = q.toLowerCase();
+      list = list.filter((u) => (u.display_name ?? "").toLowerCase().includes(s) || (u.email ?? "").toLowerCase().includes(s) || u.id.includes(s));
+    }
+    return list;
+  }, [data, q, roleFilter]);
+
+  const cols: Column<User>[] = [
+    {
+      key: "user",
+      header: "Usuário",
+      cell: (u) => (
+        <div>
+          <p className="font-medium">{u.display_name ?? "(sem nome)"}</p>
+          <p className="font-mono text-[10px] text-muted-foreground">{u.id}</p>
+        </div>
+      ),
+    },
+    { key: "email", header: "Email", cell: (u) => <span className="font-mono text-xs">{u.email ?? "—"}</span> },
+    {
+      key: "roles",
+      header: "Papéis",
+      cell: (u) => (
+        <div className="flex flex-wrap gap-1">
+          {u.roles.length === 0 ? (
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">user</span>
+          ) : u.roles.map((r) => (
+            <span key={r} className={`rounded px-1.5 py-0.5 text-[10px] font-mono ${
+              r === "admin" ? "bg-primary/12 text-primary"
+              : r === "merchant" ? "bg-success/12 text-success"
+              : "bg-muted text-muted-foreground"
+            }`}>{r}</span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      cell: (u) => (
+        <div className="flex flex-wrap gap-1.5">
+          {(["admin", "merchant"] as const).map((role) => {
+            const has = u.roles.includes(role);
+            return (
+              <button
+                key={role}
+                onClick={() => grant.mutate({ user_id: u.id, role, action: has ? "revoke" : "grant" })}
+                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] transition-colors ${
+                  has
+                    ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                    : "bg-primary/10 text-primary hover:bg-primary/20"
+                }`}
+              >
+                {has ? <ShieldMinus className="h-3 w-3" /> : <ShieldPlus className="h-3 w-3" />}
+                {has ? `− ${role}` : `+ ${role}`}
+              </button>
+            );
+          })}
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-serif text-3xl font-semibold text-foreground">Usuários</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Pesquisar contas e gerenciar papéis.</p>
-      </div>
-
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, email ou ID…" className="w-full h-10 pl-10 pr-3 rounded-lg border border-border bg-card text-sm" />
-      </div>
-
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-left text-xs uppercase font-mono tracking-widest text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Usuário</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Papéis</th>
-              <th className="px-4 py-3 font-medium">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {isLoading ? (
-              <tr><td colSpan={4} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
-            ) : filtered.map((u) => (
-              <tr key={u.id}>
-                <td className="px-4 py-3">
-                  <p className="font-medium">{u.display_name ?? "(sem nome)"}</p>
-                  <p className="text-[10px] text-muted-foreground font-mono">{u.id}</p>
-                </td>
-                <td className="px-4 py-3 font-mono text-xs">{u.email ?? "—"}</td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-1">
-                    {u.roles.length === 0 ? <span className="text-xs text-muted-foreground">user</span> : u.roles.map((r) => (
-                      <span key={r} className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${r === "admin" ? "bg-primary/10 text-primary" : r === "merchant" ? "bg-success/10 text-success" : "bg-muted"}`}>{r}</span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap gap-2">
-                    {(["admin", "merchant"] as const).map((role) => {
-                      const has = u.roles.includes(role);
-                      return (
-                        <button
-                          key={role}
-                          onClick={() => grant.mutate({ user_id: u.id, role, action: has ? "revoke" : "grant" })}
-                          className={`inline-flex items-center gap-1 text-xs ${has ? "text-destructive" : "text-primary"} hover:underline`}
-                        >
-                          {has ? <ShieldMinus className="h-3.5 w-3.5" /> : <ShieldPlus className="h-3.5 w-3.5" />}
-                          {has ? `Revogar ${role}` : `Tornar ${role}`}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!isLoading && filtered.length === 0 ? (
-              <tr><td colSpan={4} className="p-6 text-center text-muted-foreground text-sm">Nenhum usuário encontrado.</td></tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
+      <PageHeader title="Usuários" description="Pesquisar contas, gerenciar papéis e permissões." />
+      <DataTable
+        rows={filtered}
+        columns={cols}
+        isLoading={isLoading}
+        getRowId={(u) => u.id}
+        emptyMessage="Nenhum usuário encontrado."
+        toolbar={
+          <>
+            <SearchInput value={q} onChange={setQ} placeholder="Nome, email ou ID…" className="w-full sm:w-72" />
+            <div className="flex items-center gap-1 rounded-md border border-border/60 bg-card p-0.5">
+              {(["all", "admin", "merchant", "user"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRoleFilter(r)}
+                  className={`h-7 rounded px-2.5 text-[11px] font-mono uppercase tracking-widest transition-colors ${
+                    roleFilter === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {r === "all" ? "todos" : r}
+                </button>
+              ))}
+            </div>
+            <span className="ml-auto text-xs font-mono text-muted-foreground">{filtered.length} de {data?.length ?? 0}</span>
+          </>
+        }
+      />
     </div>
   );
 }

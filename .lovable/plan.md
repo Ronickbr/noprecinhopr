@@ -1,79 +1,56 @@
-# PrecinhoBom — Comparador de Preços (MVP escalável)
+# Reconstrução completa do Painel Admin — PrecinhoBom
 
-Evolução moderna do BoaDica: agregador de ofertas com foco em performance, SEO, e arquitetura pronta para escalar (milhares de lojas, milhões de SKUs). Primeira versão com **catálogo seed realista** para validar UX; feeds reais de lojistas plugam depois no mesmo schema.
+Vou reconstruir o painel administrativo do zero, com arquitetura escalável, UX inspirada em Linear/Vercel/Stripe, e componentes reutilizáveis. Dado o tamanho do escopo, entrego em **fases** — cada fase gera um painel funcional e navegável, sem quebrar o resto do sistema.
 
-## Stack e infraestrutura
-- **TanStack Start** (SSR + rotas file-based) para SEO nativo em página de produto.
-- **Lovable Cloud** (Postgres + Auth + Storage) — login e-mail/senha + Google.
-- Server functions (`createServerFn`) para leituras/escritas; `/api/public/*` para tracking de cliques.
-- TanStack Query com `ensureQueryData` + `useSuspenseQuery`.
+## Arquitetura base (Fase 0 — fundação)
 
-## Modelo de dados (chave para escalar)
+Reescrever `src/routes/_authenticated/admin.tsx` e criar primitivos que **todas** as telas vão consumir:
 
-```text
-stores            id, slug, name, logo_url, trust_score, owner_user_id, status
-categories        id, slug, name, parent_id
-products          id, slug, name, brand, category_id, image_url, description, created_at
-offers            id, product_id, store_id, price_cents, url, in_stock, updated_at
-price_history     id, offer_id, price_cents, captured_at        -- particionável por mês
-clicks            id, offer_id, user_id?, ua, referer, created_at  -- /api/public/track
-favorites         user_id, product_id
-price_alerts      id, user_id, product_id, target_price_cents, active
-user_roles        user_id, role enum('admin','merchant','user')  -- tabela separada
-profiles          id (fk auth.users), display_name, avatar_url
-```
+- **Shell novo**: sidebar recolhível (persistida em `localStorage`), topbar com busca global (⌘K), breadcrumb, alternador tema claro/escuro, avatar/menu.
+- **Primitivos reutilizáveis** em `src/components/admin/`:
+  - `DataTable` — paginação server-side, ordenação, seleção múltipla, ações em lote, colunas configuráveis, exportação CSV/Excel/PDF, skeleton de loading, empty state.
+  - `FilterBar`, `SearchInput` (debounced), `StatCard`, `PageHeader`, `ConfirmDialog`, `SideSheet` (detalhe/edição), `EmptyState`, `Skeleton`, `Chart` wrapper (Recharts).
+- **Tema claro/escuro** via `next-themes`, tokens já existentes em `src/styles.css` estendidos para ambos os modos.
+- **Toasts** via `sonner` (já instalado). Confirmações destrutivas via modal.
+- **Padrões de rota**: cada seção vira `admin.<secao>.tsx` (lista) + `admin.<secao>.$id.tsx` (detalhe) sob o layout novo.
 
-Índices em `offers(product_id, price_cents)`, `products(category_id)`, `products` full-text (`tsvector` em `name+brand`).
-RLS: público lê `products/offers/stores/categories/price_history`; lojista escreve apenas suas próprias `offers`; admin gerencia tudo via `has_role()`.
+## Sidebar — itens
 
-## Escopo entregue
+Dashboard, Lojas, Usuários, Produtos, Categorias, Subcategorias, Marcas, Ofertas, Regiões, Solicitações, Denúncias, Relatórios, Logs, Permissões, Configurações, Financeiro *(placeholder "em breve")*.
 
-### 1. Público (SEO-first, SSR)
-- `/` — home editorial: destaques curados, categorias populares, "melhores quedas de preço da semana".
-- `/busca?q=` — busca full-text com filtros (preço, loja, categoria, avaliação da loja).
-- `/categoria/$slug` — lista com filtros e ordenação.
-- `/produto/$slug` — hero do produto, **tabela de ofertas ordenada por preço**, gráfico de histórico (Recharts), CTA "Avisar quando baixar", botão favoritar. Cada linha da tabela usa `/api/public/track?offer=...` antes de redirecionar para a loja.
-- `head()` por rota com `og:image` do produto (dinâmico via loader).
-- `sitemap.xml` server route + `robots.txt`.
+## Fases de entrega
 
-### 2. Usuário (autenticado, `_authenticated/`)
-- `/minha-conta/favoritos`
-- `/minha-conta/alertas` — CRUD de alertas com preço-alvo.
-- Sessão via Supabase; login com Google via `lovable.auth.signInWithOAuth`.
+### Fase 1 — Fundação + Dashboard + Lojas + Produtos + Usuários *(entrego agora)*
+- Shell novo, primitivos, tema claro/escuro.
+- **Dashboard**: cards (lojas, produtos ativos/pendentes/expirados, usuários, cliques 30d, novos cadastros 7d, comparações, economia estimada), gráfico de crescimento (linha), gráfico de novos produtos (barras), tabelas "últimos cadastros", "produtos mais pesquisados", "lojas mais acessadas", alertas do sistema. Mapa do Paraná: heat-list por cidade (SVG do PR entra na Fase 2 — evita dependência pesada agora).
+- **Lojas**: DataTable com foto, nome, cidade, plano, nº produtos, último acesso, status, data cadastro, ações. `SideSheet` de detalhe com abas (Dados, Produtos, Histórico, Acessos, Plano, Logs).
+- **Produtos**: filtros laterais (categoria, marca, status, faixa de preço), busca, tabela com imagem/nome/categoria/marca/nº lojas/menor/maior/médio/atualização/status. Detalhe com gráfico de evolução, lojas que vendem, preço por cidade.
+- **Usuários**: tabela com papéis, filtros por papel, gestão de permissões (grant/revoke admin/merchant/moderator).
 
-### 3. Lojista (`_authenticated/lojista/`, role `merchant`)
-- Cadastro/edição da loja.
-- Upload de catálogo (CSV: `sku,name,brand,category,price,url,image`) — parser server-side com validação Zod, cria/atualiza `products` + `offers` em lote.
-- Dashboard de cliques por produto (últimos 30d).
+### Fase 2 — Catálogo estendido + Moderação
+- **Categorias / Subcategorias / Marcas**: CRUD com drag-and-drop de ordenação (requer migração: tabelas `subcategories`, `brands`, coluna `sort_order`).
+- **Ofertas**: maior desconto, aumentos, sem atualização, destaques, validade, comparativo.
+- **Regiões**: gestão de cidades/estado com contadores.
+- **Solicitações**: fila de aprovação (lojas, produtos, marcas, categorias) — aceitar/rejeitar/solicitar correção (requer migração: tabela `approval_requests`).
+- **Denúncias**: fila com status (requer migração: tabela `reports`).
 
-### 4. Admin (`_authenticated/admin/`, role `admin`)
-- Aprovação de lojas, moderação de produtos.
+### Fase 3 — Relatórios + Logs + Configurações + Permissões
+- **Relatórios**: mais buscados, mais acessadas, categorias/marcas populares, economia média, rankings cidade/loja/produto, exportação Excel/PDF.
+- **Logs**: sistema de audit-log completo (requer migração: tabela `audit_logs` + triggers em tabelas críticas). Filtros por tipo, usuário, período.
+- **Permissões**: matriz papel × recurso (novo papel `moderator`).
+- **Configurações**: SEO (título/descrição/OG), logo/favicon, redes sociais, GA/GTM/Meta Pixel, SMTP, WhatsApp, Termos, Privacidade, LGPD, integrações/API, backup (requer migração: tabela `site_settings` key-value).
 
-## Direção visual (Wirecutter/editorial)
-- **Off-white** (`oklch(0.98 0.005 90)`) + tipografia serifada nos títulos (Fraunces) + sans nos corpos (Inter).
-- Accent verde-oliva escuro para CTAs; badges de "Melhor preço" e "Preço mais baixo em 90 dias".
-- Cards grandes com muito respiro; fotos de produto centralizadas em fundo neutro.
-- Tokens semânticos em `src/styles.css` (nada de cor hardcoded).
+### Fase 4 — Mapa do PR + Financeiro
+- Mapa SVG interativo do Paraná no dashboard.
+- Módulo financeiro (faturas, MRR, churn — se assinaturas estiverem em produção).
 
-## Performance
-- SSR + streaming; imagens `loading="lazy"` exceto LCP.
-- Índices SQL + limit/pagination server-side em todas as listagens (nunca `SELECT *` sem paginar).
-- Cache de `stores` e `categories` no server (raro muda).
-- `price_history` só grava quando preço muda (dedupe).
+## Detalhes técnicos
 
-## Fora do escopo agora (roadmap)
-- Feeds XML/JSON automáticos (só CSV manual no MVP).
-- Cupons, cashback, review de usuários, comparador lado-a-lado.
-- Job agendado para disparar e-mail de alerta — struct pronta, disparo real fica para quando integrar Lovable Email.
+- **Server functions** novas em `src/lib/admin.functions.ts` (separado de `products.functions.ts` que já está grande): todas com `.middleware([requireSupabaseAuth])` + checagem `has_role(uid, 'admin')`. Paginação server-side (`range`), busca com `ilike`/`websearch_to_tsquery`, ordenação parametrizada.
+- **Cache**: TanStack Query com `staleTime` de 30s em listas, `invalidateQueries` após mutations.
+- **Migrações necessárias na Fase 1**: nenhuma — reuso tabelas atuais (`stores`, `products`, `offers`, `clicks`, `profiles`, `user_roles`, `merchant_subscriptions`, `merchant_plans`, `categories`, `price_history`).
+- **Coexistência**: rotas antigas (`admin.lojas.tsx`, `admin.produtos.tsx`, etc.) são **substituídas** pelas novas com o mesmo path — sem rota duplicada. Nada fora de `/admin/*` é tocado.
+- **Bibliotecas novas** (Fase 1): `next-themes` (dark mode), `recharts` (gráficos), `@tanstack/react-table` (DataTable robusta). Instalo com `bun add` antes dos imports.
 
-## Ordem de execução
-1. Ativar Lovable Cloud → criar tabelas + RLS + roles + seed (10 lojas, 8 categorias, ~60 produtos, ~200 ofertas, histórico de 90d).
-2. Design system (tokens, fontes).
-3. Layout raiz (header com busca + login) e home.
-4. Busca + categoria + página de produto com gráfico.
-5. Auth (e-mail + Google) + favoritos + alertas.
-6. Painel de lojista (CSV upload + dashboard cliques).
-7. Painel admin.
-8. sitemap/robots + SEO check final.
-
-Ao aprovar, começo pelo passo 1.
+## O que fica de fora desta primeira entrega
+Fases 2–4 acima. Confirmado o plano, começo pela Fase 1 e sigo em entregas subsequentes conforme você aprovar cada uma.

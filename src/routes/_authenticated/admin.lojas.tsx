@@ -1,269 +1,241 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
-  adminListStores,
-  adminSetStoreStatus,
-  adminDeleteStore,
-  adminSetTrustScore,
-  adminListMerchants,
-  adminSetSubscription,
-  adminGrantRole,
-  listMerchantPlansForAdmin,
+  adminListStores, adminSetStoreStatus, adminDeleteStore, adminSetTrustScore,
+  adminListMerchants, adminSetSubscription, adminGrantRole, listMerchantPlansForAdmin,
 } from "@/lib/products.functions";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Trash2, ShieldCheck, ShieldX, Star, CreditCard, UserCog } from "lucide-react";
+import { PageHeader, SearchInput, SideSheet, StatusBadge, Section } from "@/components/admin/ui";
+import { DataTable, type Column } from "@/components/admin/data-table";
+import { Star, Trash2, ExternalLink, ShieldCheck, ShieldX } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/lojas")({
-  head: () => ({ meta: [{ title: "Admin — PrecinhoBom" }, { name: "robots", content: "noindex" }] }),
-  beforeLoad: async () => {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) throw redirect({ to: "/auth" });
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", u.user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (!data) throw redirect({ to: "/" });
-  },
-  component: AdminPage,
+  component: LojasPage,
 });
 
-function AdminPage() {
-  const qc = useQueryClient();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["admin-stores"],
-    queryFn: () => adminListStores(),
-    retry: false,
-  });
-  const { data: merchants } = useQuery({
-    queryKey: ["admin-merchants"],
-    queryFn: () => adminListMerchants(),
-    retry: false,
-  });
-  const { data: plans } = useQuery({
-    queryKey: ["admin-plans"],
-    queryFn: () => listMerchantPlansForAdmin(),
-    retry: false,
-  });
+type Merchant = NonNullable<Awaited<ReturnType<typeof adminListMerchants>>>[number];
 
-  const invalidateAll = () => {
-    qc.invalidateQueries({ queryKey: ["admin-stores"] });
-    qc.invalidateQueries({ queryKey: ["admin-merchants"] });
-  };
+function LojasPage() {
+  const qc = useQueryClient();
+  const { data: merchants, isLoading } = useQuery({ queryKey: ["admin-merchants"], queryFn: () => adminListMerchants(), retry: false });
+  const { data: plans } = useQuery({ queryKey: ["admin-plans"], queryFn: () => listMerchantPlansForAdmin(), retry: false });
+
+  const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "approved" | "pending" | "suspended">("all");
+  const [selected, setSelected] = useState<Merchant | null>(null);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-merchants"] });
 
   const setStatus = useMutation({
-    mutationFn: (vars: { id: string; status: "pending" | "approved" | "suspended" }) =>
-      adminSetStoreStatus({ data: vars }),
-    onSuccess: () => { invalidateAll(); toast.success("Status atualizado"); },
+    mutationFn: (vars: { id: string; status: "pending" | "approved" | "suspended" }) => adminSetStoreStatus({ data: vars }),
+    onSuccess: () => { invalidate(); toast.success("Status atualizado"); },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteStore({ data: { id } }),
-    onSuccess: () => { invalidateAll(); toast.success("Loja excluída"); },
+    onSuccess: () => { invalidate(); toast.success("Loja excluída"); setSelected(null); },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const setTrust = useMutation({
     mutationFn: (vars: { id: string; trust_score: number }) => adminSetTrustScore({ data: vars }),
-    onSuccess: () => { invalidateAll(); toast.success("Confiança atualizada"); },
+    onSuccess: () => { invalidate(); toast.success("Confiança atualizada"); },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const setSub = useMutation({
-    mutationFn: (vars: { user_id: string; plan_id: string | null; status: "trialing" | "active" | "canceled" | "past_due" | "expired" }) =>
-      adminSetSubscription({ data: vars }),
-    onSuccess: () => { invalidateAll(); toast.success("Assinatura atualizada"); },
+    mutationFn: (vars: { user_id: string; plan_id: string | null; status: "trialing" | "active" | "canceled" | "past_due" | "expired" }) => adminSetSubscription({ data: vars }),
+    onSuccess: () => { invalidate(); toast.success("Assinatura atualizada"); },
     onError: (e: Error) => toast.error(e.message),
   });
-
   const grantRole = useMutation({
-    mutationFn: (vars: { user_id: string; role: "admin" | "merchant" | "user"; action: "grant" | "revoke" }) =>
-      adminGrantRole({ data: vars }),
-    onSuccess: () => { invalidateAll(); toast.success("Papel atualizado"); },
+    mutationFn: (vars: { user_id: string; role: "admin" | "merchant" | "user"; action: "grant" | "revoke" }) => adminGrantRole({ data: vars }),
+    onSuccess: () => { invalidate(); toast.success("Papel atualizado"); },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (error) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center text-muted-foreground">
-        Você não tem acesso ao painel de administração.
-      </div>
-    );
-  }
+  const filtered = useMemo(() => {
+    let list = merchants ?? [];
+    if (statusFilter !== "all") list = list.filter((m) => m.status === statusFilter);
+    if (q.trim()) {
+      const s = q.toLowerCase();
+      list = list.filter((m) => m.name.toLowerCase().includes(s) || m.slug.toLowerCase().includes(s) || (m.owner?.display_name ?? "").toLowerCase().includes(s));
+    }
+    return list;
+  }, [merchants, statusFilter, q]);
 
-  const ownerByStore = new Map((merchants ?? []).map((m) => [m.id, m.owner]));
-  const subByStore = new Map((merchants ?? []).map((m) => [m.id, m.subscription]));
+  const cols: Column<Merchant>[] = [
+    {
+      key: "name",
+      header: "Loja",
+      cell: (m) => (
+        <div className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-muted text-xs font-mono text-muted-foreground">
+            {m.name.slice(0, 2).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-medium">{m.name}</p>
+            <p className="truncate font-mono text-[10px] text-muted-foreground">/{m.slug}</p>
+          </div>
+        </div>
+      ),
+    },
+    { key: "owner", header: "Lojista", cell: (m) => <span className="text-sm">{m.owner?.display_name ?? "—"}</span> },
+    { key: "plan", header: "Plano", cell: (m) => <span className="text-xs font-mono">{m.subscription?.plan?.name ?? "—"}</span> },
+    { key: "offers", header: "Produtos", align: "right", cell: (m) => <span className="tabular-nums">{m.offers_count}</span> },
+    { key: "clicks", header: "Cliques 30d", align: "right", cell: (m) => <span className="tabular-nums">{m.clicks_30d}</span> },
+    { key: "trust", header: "Confiança", cell: (m) => <span className="inline-flex items-center gap-1 text-xs"><Star className="h-3 w-3 text-highlight" />{m.trust_score.toFixed(1)}</span> },
+    { key: "status", header: "Status", cell: (m) => <StatusBadge status={m.status as string} /> },
+    { key: "created", header: "Cadastro", cell: (m) => <span className="font-mono text-[11px] text-muted-foreground">{new Date(m.created_at).toLocaleDateString("pt-BR")}</span> },
+  ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-serif text-3xl font-semibold text-foreground">Administração de lojas</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Aprove, suspenda, ajuste confiança, gerencie assinaturas e papéis.</p>
-        </div>
-        <a href="/admin/lojistas" className="text-xs font-mono uppercase tracking-widest text-primary hover:underline">
-          Monitorar lojistas →
-        </a>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title="Lojas" description="Aprove, suspenda, ajuste confiança e gerencie assinaturas." />
 
-      <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead className="bg-muted text-left text-xs uppercase font-mono tracking-widest text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Loja</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Confiança</th>
-              <th className="px-4 py-3 font-medium">Assinatura</th>
-              <th className="px-4 py-3 font-medium">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {isLoading ? (
-              <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">Carregando…</td></tr>
-            ) : (
-              data?.map((s) => {
-                const owner = ownerByStore.get(s.id) ?? null;
-                const sub = subByStore.get(s.id) ?? null;
-                return (
-                  <tr key={s.id} className="align-top">
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{s.name}</p>
-                      <p className="text-xs text-muted-foreground font-mono">/{s.slug}</p>
-                      {owner ? (
-                        <p className="text-xs text-muted-foreground mt-0.5">{owner.display_name ?? "—"}</p>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={s.status}
-                        onChange={(e) => setStatus.mutate({ id: s.id, status: e.target.value as "pending" | "approved" | "suspended" })}
-                        className="h-8 px-2 rounded border border-input bg-background text-xs"
-                      >
-                        <option value="pending">pending</option>
-                        <option value="approved">approved</option>
-                        <option value="suspended">suspended</option>
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <TrustEditor
-                        current={Number(s.trust_score)}
-                        onSave={(v) => setTrust.mutate({ id: s.id, trust_score: v })}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      {owner ? (
-                        <SubscriptionEditor
-                          plans={plans ?? []}
-                          current={sub}
-                          onChange={(vars) => setSub.mutate({ user_id: owner.id, ...vars })}
-                        />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">sem dono</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {s.status !== "approved" ? (
-                          <button
-                            onClick={() => setStatus.mutate({ id: s.id, status: "approved" })}
-                            className="inline-flex items-center gap-1 text-xs text-success hover:underline"
-                          >
-                            <ShieldCheck className="h-3.5 w-3.5" /> Aprovar
-                          </button>
-                        ) : null}
-                        {s.status !== "suspended" ? (
-                          <button
-                            onClick={() => setStatus.mutate({ id: s.id, status: "suspended" })}
-                            className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
-                          >
-                            <ShieldX className="h-3.5 w-3.5" /> Suspender
-                          </button>
-                        ) : null}
-                        {owner ? (
-                          <RoleMenu ownerId={owner.id} onAction={(role, action) => grantRole.mutate({ user_id: owner.id, role, action })} />
-                        ) : null}
-                        <button
-                          onClick={() => {
-                            if (confirm(`Excluir loja "${s.name}"? Isso remove todas as ofertas.`)) remove.mutate(s.id);
-                          }}
-                          className="inline-flex items-center gap-1 text-xs text-destructive hover:underline"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Excluir
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
+      <DataTable
+        rows={filtered}
+        columns={cols}
+        isLoading={isLoading}
+        getRowId={(m) => m.id}
+        onRowClick={(m) => setSelected(m)}
+        emptyMessage="Nenhuma loja encontrada com estes filtros."
+        toolbar={
+          <>
+            <SearchInput value={q} onChange={setQ} placeholder="Buscar por nome, slug ou lojista…" className="w-full sm:w-72" />
+            <div className="flex items-center gap-1 rounded-md border border-border/60 bg-card p-0.5">
+              {(["all", "approved", "pending", "suspended"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`h-7 rounded px-2.5 text-[11px] font-mono uppercase tracking-widest transition-colors ${
+                    statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {s === "all" ? "todos" : s}
+                </button>
+              ))}
+            </div>
+            <span className="ml-auto text-xs font-mono text-muted-foreground">{filtered.length} de {merchants?.length ?? 0}</span>
+          </>
+        }
+      />
+
+      <SideSheet
+        open={selected != null}
+        onClose={() => setSelected(null)}
+        title={selected?.name}
+        subtitle={`/${selected?.slug}`}
+        width="max-w-2xl"
+      >
+        {selected && (
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusBadge status={selected.status as string} />
+              <Link to="/loja/$slug" params={{ slug: selected.slug }} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                <ExternalLink className="h-3 w-3" /> Ver página pública
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <MetricBox label="Produtos" value={selected.offers_count} />
+              <MetricBox label="Cliques 30d" value={selected.clicks_30d} />
+              <MetricBox label="Confiança" value={selected.trust_score.toFixed(1)} />
+            </div>
+
+            <Section title="Status e moderação">
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => setStatus.mutate({ id: selected.id, status: "approved" })} className="inline-flex items-center gap-1 rounded-md bg-success/10 px-3 py-1.5 text-xs text-success hover:bg-success/20">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Aprovar
+                </button>
+                <button onClick={() => setStatus.mutate({ id: selected.id, status: "pending" })} className="inline-flex items-center gap-1 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-accent">
+                  Pendente
+                </button>
+                <button onClick={() => setStatus.mutate({ id: selected.id, status: "suspended" })} className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/20">
+                  <ShieldX className="h-3.5 w-3.5" /> Suspender
+                </button>
+              </div>
+            </Section>
+
+            <Section title="Score de confiança">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number" step="0.1" min={0} max={5}
+                  defaultValue={selected.trust_score.toFixed(1)}
+                  onBlur={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isNaN(n)) setTrust.mutate({ id: selected.id, trust_score: Math.max(0, Math.min(5, n)) });
+                  }}
+                  className="h-9 w-24 rounded-md border border-border/60 bg-background px-2 font-mono text-sm"
+                />
+                <span className="text-xs text-muted-foreground">0.0 — 5.0</span>
+              </div>
+            </Section>
+
+            {selected.owner && (
+              <Section title="Assinatura & papéis" description={`Lojista: ${selected.owner.display_name ?? "(sem nome)"}`}>
+                <SubscriptionEditor
+                  plans={plans ?? []}
+                  current={selected.subscription}
+                  onSave={(vars) => setSub.mutate({ user_id: selected.owner!.id, ...vars })}
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(["admin", "merchant"] as const).map((role) => (
+                    <div key={role} className="inline-flex items-center gap-1 rounded-md border border-border/60 p-0.5 text-xs">
+                      <span className="px-2 font-mono">{role}</span>
+                      <button className="rounded bg-success/10 px-2 py-0.5 text-success hover:bg-success/20" onClick={() => grantRole.mutate({ user_id: selected.owner!.id, role, action: "grant" })}>+</button>
+                      <button className="rounded bg-destructive/10 px-2 py-0.5 text-destructive hover:bg-destructive/20" onClick={() => grantRole.mutate({ user_id: selected.owner!.id, role, action: "revoke" })}>−</button>
+                    </div>
+                  ))}
+                </div>
+              </Section>
             )}
-          </tbody>
-        </table>
-      </div>
+
+            <Section title="Zona de perigo">
+              <button
+                onClick={() => { if (confirm(`Excluir loja "${selected.name}"? Isso remove todas as ofertas.`)) remove.mutate(selected.id); }}
+                className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/20"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Excluir loja permanentemente
+              </button>
+            </Section>
+          </div>
+        )}
+      </SideSheet>
     </div>
   );
 }
 
-function TrustEditor({ current, onSave }: { current: number; onSave: (v: number) => void }) {
-  const [value, setValue] = useState(current.toFixed(1));
+function MetricBox({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="inline-flex items-center gap-1.5">
-      <Star className="h-3.5 w-3.5 text-muted-foreground" />
-      <input
-        type="number"
-        step="0.1"
-        min={0}
-        max={5}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => {
-          const n = Number(value);
-          if (!Number.isNaN(n) && n !== current) onSave(Math.min(5, Math.max(0, n)));
-        }}
-        className="w-14 h-8 px-2 rounded border border-input bg-background text-xs font-mono"
-      />
+    <div className="rounded-lg border border-border/60 bg-muted/30 p-3">
+      <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="mt-1 text-xl font-semibold tabular-nums">{typeof value === "number" ? value.toLocaleString("pt-BR") : value}</p>
     </div>
   );
 }
 
 function SubscriptionEditor({
-  plans,
-  current,
-  onChange,
+  plans, current, onSave,
 }: {
   plans: Array<{ id: string; slug: string; name: string }>;
-  current: { status: string; plan: { name: string } | null } | null;
-  onChange: (vars: { plan_id: string | null; status: "trialing" | "active" | "canceled" | "past_due" | "expired" }) => void;
+  current: Merchant["subscription"];
+  onSave: (vars: { plan_id: string | null; status: "trialing" | "active" | "canceled" | "past_due" | "expired" }) => void;
 }) {
-  const [planId, setPlanId] = useState<string>("");
+  const [planId, setPlanId] = useState("");
   const [status, setStatus] = useState<"trialing" | "active" | "canceled" | "past_due" | "expired">(
     (current?.status as "trialing" | "active" | "canceled" | "past_due" | "expired" | undefined) ?? "trialing",
   );
   return (
-    <div className="space-y-1.5">
-      <p className="text-xs">
-        <CreditCard className="inline h-3 w-3 mr-1" />
-        {current?.plan?.name ?? "—"} <span className="text-muted-foreground">({current?.status ?? "sem plano"})</span>
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        Atual: <span className="font-mono text-foreground">{current?.plan?.name ?? "sem plano"}</span> · {current?.status ?? "—"}
       </p>
-      <div className="flex gap-1">
-        <select
-          value={planId}
-          onChange={(e) => setPlanId(e.target.value)}
-          className="h-7 px-1.5 rounded border border-input bg-background text-xs"
-        >
-          <option value="">Plano…</option>
-          {plans.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
+      <div className="flex flex-wrap gap-2">
+        <select value={planId} onChange={(e) => setPlanId(e.target.value)} className="h-9 rounded-md border border-border/60 bg-background px-2 text-sm">
+          <option value="">Selecionar plano…</option>
+          {plans.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as typeof status)}
-          className="h-7 px-1.5 rounded border border-input bg-background text-xs"
-        >
+        <select value={status} onChange={(e) => setStatus(e.target.value as typeof status)} className="h-9 rounded-md border border-border/60 bg-background px-2 text-sm">
           <option value="trialing">trialing</option>
           <option value="active">active</option>
           <option value="canceled">canceled</option>
@@ -271,8 +243,8 @@ function SubscriptionEditor({
           <option value="expired">expired</option>
         </select>
         <button
-          onClick={() => onChange({ plan_id: planId || null, status })}
-          className="text-xs px-2 h-7 rounded bg-primary text-primary-foreground hover:opacity-90"
+          onClick={() => onSave({ plan_id: planId || null, status })}
+          className="h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90"
         >
           Aplicar
         </button>
@@ -281,36 +253,5 @@ function SubscriptionEditor({
   );
 }
 
-function RoleMenu({
-  ownerId,
-  onAction,
-}: {
-  ownerId: string;
-  onAction: (role: "admin" | "merchant" | "user", action: "grant" | "revoke") => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-      >
-        <UserCog className="h-3.5 w-3.5" /> Papéis
-      </button>
-      {open ? (
-        <div className="absolute z-10 mt-1 w-40 rounded-md border border-border bg-popover shadow-lg text-xs" onMouseLeave={() => setOpen(false)}>
-          {(["admin", "merchant", "user"] as const).map((role) => (
-            <div key={role} className="flex items-center justify-between px-2 py-1.5 hover:bg-accent">
-              <span className="font-mono">{role}</span>
-              <div className="flex gap-1.5">
-                <button className="text-success hover:underline" onClick={() => { onAction(role, "grant"); setOpen(false); }}>+</button>
-                <button className="text-destructive hover:underline" onClick={() => { onAction(role, "revoke"); setOpen(false); }}>−</button>
-              </div>
-            </div>
-          ))}
-          <p className="px-2 py-1 text-[10px] text-muted-foreground border-t border-border font-mono truncate">{ownerId.slice(0, 8)}…</p>
-        </div>
-      ) : null}
-    </div>
-  );
-}
+// Keep symbol referenced to avoid unused import when rearranged
+adminListStores;
