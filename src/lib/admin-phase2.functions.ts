@@ -123,7 +123,10 @@ export const adminListApprovals = createServerFn({ method: "GET" })
     let q = (supabaseAdmin as any).from("approval_requests").select("*").order("created_at", { ascending: false }).limit(200);
     if (data.status !== "all") q = q.eq("status", data.status);
     const { data: rows } = await q;
-    return (rows ?? []) as Array<{ id: string; kind: string; status: string; requester_id: string | null; target_id: string | null; payload: Record<string, unknown>; reviewer_id: string | null; reviewer_notes: string | null; reviewed_at: string | null; created_at: string }>;
+    return ((rows ?? []) as Array<{ payload: unknown } & Record<string, unknown>>).map((r) => ({
+      ...(r as unknown as { id: string; kind: string; status: string; requester_id: string | null; target_id: string | null; reviewer_id: string | null; reviewer_notes: string | null; reviewed_at: string | null; created_at: string }),
+      payload: JSON.stringify(r.payload ?? {}),
+    }));
   });
 
 export const adminDecideApproval = createServerFn({ method: "POST" })
