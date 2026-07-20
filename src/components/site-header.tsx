@@ -141,10 +141,13 @@ export function SiteFooter() {
           </ul>
         </div>
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Sobre</p>
-          <p className="mt-3 text-muted-foreground">
-            Preços coletados diariamente. Podemos receber comissão em algumas
-            compras — nunca por posicionamento.
+          <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Legal</p>
+          <ul className="mt-3 space-y-1.5 text-muted-foreground">
+            <li><Link to="/privacidade" className="hover:text-foreground">Política de Privacidade</Link></li>
+            <li><Link to="/termos" className="hover:text-foreground">Termos de Uso</Link></li>
+          </ul>
+          <p className="mt-3 text-xs text-muted-foreground/80">
+            Preços coletados diariamente. Podemos receber comissão em algumas compras — nunca por posicionamento.
           </p>
         </div>
       </div>
