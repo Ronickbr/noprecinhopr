@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      approval_requests: {
+        Row: {
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["approval_kind"]
+          payload: Json
+          requester_id: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          reviewer_notes: string | null
+          status: Database["public"]["Enums"]["approval_status"]
+          target_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["approval_kind"]
+          payload?: Json
+          requester_id?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          target_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["approval_kind"]
+          payload?: Json
+          requester_id?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          target_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      brands: {
+        Row: {
+          active: boolean
+          country: string | null
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          active?: boolean
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          active?: boolean
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -317,6 +398,7 @@ export type Database = {
       products: {
         Row: {
           brand: string | null
+          brand_id: string | null
           category_id: string | null
           created_at: string
           description: string | null
@@ -329,6 +411,7 @@ export type Database = {
         }
         Insert: {
           brand?: string | null
+          brand_id?: string | null
           category_id?: string | null
           created_at?: string
           description?: string | null
@@ -341,6 +424,7 @@ export type Database = {
         }
         Update: {
           brand?: string | null
+          brand_id?: string | null
           category_id?: string | null
           created_at?: string
           description?: string | null
@@ -352,6 +436,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
@@ -379,6 +470,51 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          assignee_id: string | null
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["report_status"]
+          target: Database["public"]["Enums"]["report_target"]
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target: Database["public"]["Enums"]["report_target"]
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+          target?: Database["public"]["Enums"]["report_target"]
+          target_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -469,6 +605,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "merchant" | "user"
+      approval_kind: "store" | "product" | "brand" | "category"
+      approval_status: "pending" | "approved" | "rejected"
+      report_status: "open" | "reviewing" | "resolved" | "dismissed"
+      report_target: "product" | "store" | "user" | "offer"
       store_status: "pending" | "approved" | "suspended"
       subscription_status:
         | "trialing"
@@ -604,6 +744,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "merchant", "user"],
+      approval_kind: ["store", "product", "brand", "category"],
+      approval_status: ["pending", "approved", "rejected"],
+      report_status: ["open", "reviewing", "resolved", "dismissed"],
+      report_target: ["product", "store", "user", "offer"],
       store_status: ["pending", "approved", "suspended"],
       subscription_status: [
         "trialing",
