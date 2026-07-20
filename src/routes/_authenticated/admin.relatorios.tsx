@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PageHeader, StatCard } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { adminReports } from "@/lib/admin-phase3.functions";
-import { formatPrice } from "@/lib/format";
+import { formatBRL } from "@/lib/format";
 import { BarChart3, Store, Package, MousePointerClick, Wallet, Download } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
