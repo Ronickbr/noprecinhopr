@@ -1048,15 +1048,35 @@ export const adminListUsers = createServerFn({ method: "GET" })
 // ------------ ADMIN: products ------------
 export const adminListAllProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((raw: unknown) => z.object({ q: z.string().optional(), page: z.number().int().min(1).default(1) }).parse(raw ?? {}))
+  .inputValidator((raw: unknown) => z.object({
+    q: z.string().optional(),
+    categorySlug: z.string().optional(),
+    sort: z.enum(["recent", "oldest", "name_asc", "name_desc"]).default("recent"),
+    page: z.number().int().min(1).default(1),
+  }).parse(raw ?? {}))
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
     if (!isAdmin) throw new Error("Forbidden");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const pageSize = 50;
     const from = (data.page - 1) * pageSize;
-    let q = supabaseAdmin.from("products").select("id, slug, name, brand, image_url, category_id, created_at", { count: "exact" }).order("created_at", { ascending: false }).range(from, from + pageSize - 1);
-    if (data.q) q = q.ilike("name", `%${data.q}%`);
+
+    let categoryId: string | null = null;
+    if (data.categorySlug) {
+      const { data: cat } = await supabaseAdmin.from("categories").select("id").eq("slug", data.categorySlug).maybeSingle();
+      categoryId = cat?.id ?? null;
+    }
+
+    let q = supabaseAdmin.from("products").select("id, slug, name, brand, image_url, category_id, created_at", { count: "exact" });
+    if (data.q) q = q.or(`name.ilike.%${data.q}%,brand.ilike.%${data.q}%`);
+    if (categoryId) q = q.eq("category_id", categoryId);
+
+    if (data.sort === "recent") q = q.order("created_at", { ascending: false });
+    else if (data.sort === "oldest") q = q.order("created_at", { ascending: true });
+    else if (data.sort === "name_asc") q = q.order("name", { ascending: true });
+    else q = q.order("name", { ascending: false });
+
+    q = q.range(from, from + pageSize - 1);
     const { data: rows, count } = await q;
     return { rows: rows ?? [], count: count ?? 0, page: data.page, pageSize };
   });
