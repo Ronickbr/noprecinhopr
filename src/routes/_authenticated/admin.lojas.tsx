@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   adminListStores, adminSetStoreStatus, adminDeleteStore, adminSetTrustScore,
   adminListMerchants, adminSetSubscription, adminGrantRole, listMerchantPlansForAdmin,
@@ -14,16 +14,22 @@ export const Route = createFileRoute("/_authenticated/admin/lojas")({
   component: LojasPage,
 });
 
-type Merchant = NonNullable<Awaited<ReturnType<typeof adminListMerchants>>>[number];
+type Merchant = NonNullable<Awaited<ReturnType<typeof adminListMerchants>>>["rows"][number];
 
 function LojasPage() {
   const qc = useQueryClient();
-  const { data: merchants, isLoading } = useQuery({ queryKey: ["admin-merchants"], queryFn: () => adminListMerchants(), retry: false });
-  const { data: plans } = useQuery({ queryKey: ["admin-plans"], queryFn: () => listMerchantPlansForAdmin(), retry: false });
-
   const [q, setQ] = useState("");
+  const [applied, setApplied] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "approved" | "pending" | "suspended">("all");
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Merchant | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-merchants", applied, statusFilter, page],
+    queryFn: () => adminListMerchants({ data: { q: applied || undefined, status: statusFilter, page } }),
+    retry: false,
+  });
+  const { data: plans } = useQuery({ queryKey: ["admin-plans"], queryFn: () => listMerchantPlansForAdmin(), retry: false });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-merchants"] });
 
@@ -52,16 +58,6 @@ function LojasPage() {
     onSuccess: () => { invalidate(); toast.success("Papel atualizado"); },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  const filtered = useMemo(() => {
-    let list = merchants ?? [];
-    if (statusFilter !== "all") list = list.filter((m) => m.status === statusFilter);
-    if (q.trim()) {
-      const s = q.toLowerCase();
-      list = list.filter((m) => m.name.toLowerCase().includes(s) || m.slug.toLowerCase().includes(s) || (m.owner?.display_name ?? "").toLowerCase().includes(s));
-    }
-    return list;
-  }, [merchants, statusFilter, q]);
 
   const cols: Column<Merchant>[] = [
     {
@@ -93,20 +89,30 @@ function LojasPage() {
       <PageHeader title="Lojas" description="Aprove, suspenda, ajuste confiança e gerencie assinaturas." />
 
       <DataTable
-        rows={filtered}
+        rows={data?.rows}
         columns={cols}
         isLoading={isLoading}
         getRowId={(m) => m.id}
         onRowClick={(m) => setSelected(m)}
+        page={page}
+        pageSize={data?.pageSize}
+        total={data?.count}
+        onPageChange={setPage}
         emptyMessage="Nenhuma loja encontrada com estes filtros."
         toolbar={
           <>
-            <SearchInput value={q} onChange={setQ} placeholder="Buscar por nome, slug ou lojista…" className="w-full sm:w-72" />
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              onSubmit={() => { setApplied(q); setPage(1); }}
+              placeholder="Buscar por nome ou slug…"
+              className="w-full sm:w-72"
+            />
             <div className="flex items-center gap-1 rounded-md border border-border/60 bg-card p-0.5">
               {(["all", "approved", "pending", "suspended"] as const).map((s) => (
                 <button
                   key={s}
-                  onClick={() => setStatusFilter(s)}
+                  onClick={() => { setStatusFilter(s); setPage(1); }}
                   className={`h-7 rounded px-2.5 text-[11px] font-mono uppercase tracking-widest transition-colors ${
                     statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
@@ -115,7 +121,6 @@ function LojasPage() {
                 </button>
               ))}
             </div>
-            <span className="ml-auto text-xs font-mono text-muted-foreground">{filtered.length} de {merchants?.length ?? 0}</span>
           </>
         }
       />
