@@ -136,7 +136,7 @@ export function PanelShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/60 bg-background/80 px-4 backdrop-blur-md sm:px-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
-            <Link to={homeHref} className="hover:text-foreground">
+            <Link to={homeHref as never} className="hover:text-foreground">
               {subtitle}
             </Link>
             <span className="text-muted-foreground/50">/</span>
