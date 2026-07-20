@@ -59,9 +59,10 @@ function AdminMerchantsPage() {
     );
   }
 
-  const totalClicks = (data ?? []).reduce((s, m) => s + m.clicks_30d, 0);
-  const totalOffers = (data ?? []).reduce((s, m) => s + m.offers_count, 0);
-  const activeSubs = (data ?? []).filter(
+  const rows = data?.rows ?? [];
+  const totalClicks = rows.reduce((s, m) => s + m.clicks_30d, 0);
+  const totalOffers = rows.reduce((s, m) => s + m.offers_count, 0);
+  const activeSubs = rows.filter(
     (m) => m.subscription && (m.subscription.status === "active" || m.subscription.status === "trialing"),
   ).length;
 
@@ -84,7 +85,7 @@ function AdminMerchantsPage() {
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-4">
-        <StatCard label="Lojas" value={String((data ?? []).length)} />
+        <StatCard label="Lojas (página)" value={String(rows.length)} />
         <StatCard label="Assinaturas ativas" value={String(activeSubs)} />
         <StatCard label="Ofertas totais" value={String(totalOffers)} />
         <StatCard label="Cliques (30d)" value={String(totalClicks)} />
@@ -110,14 +111,14 @@ function AdminMerchantsPage() {
                   Carregando…
                 </td>
               </tr>
-            ) : (data ?? []).length === 0 ? (
+            ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={7} className="p-6 text-center text-muted-foreground">
                   Nenhum lojista cadastrado.
                 </td>
               </tr>
             ) : (
-              data?.map((m) => {
+              rows.map((m) => {
                 const sub = m.subscription;
                 const renew = sub?.status === "trialing" ? sub.trial_ends_at : sub?.current_period_end ?? null;
                 return (
