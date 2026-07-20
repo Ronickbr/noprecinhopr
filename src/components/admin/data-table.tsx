@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Inbox } from "lucide-react";
+import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Inbox, AlertCircle, RefreshCw } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
 
 export type Column<T> = {
   key: string;
@@ -15,7 +16,10 @@ type Props<T> = {
   rows: T[] | undefined;
   columns: Column<T>[];
   isLoading?: boolean;
+  error?: unknown;
+  onRetry?: () => void;
   emptyMessage?: string;
+  emptyHint?: string;
   getRowId?: (row: T) => string;
   onRowClick?: (row: T) => void;
   sortKey?: string;
@@ -27,6 +31,26 @@ type Props<T> = {
   onPageChange?: (page: number) => void;
   toolbar?: ReactNode;
 };
+
+export function DataTable<T>({
+  rows,
+  columns,
+  isLoading,
+  error,
+  onRetry,
+  emptyMessage = "Nenhum registro encontrado.",
+  emptyHint,
+  getRowId,
+  onRowClick,
+  sortKey,
+  sortDir,
+  onSortChange,
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  toolbar,
+}: Props<T>) {
 
 export function DataTable<T>({
   rows,
@@ -98,6 +122,26 @@ export function DataTable<T>({
                   ))}
                 </tr>
               ))
+            ) : error ? (
+              <tr>
+                <td colSpan={shown.length} className="px-4 py-16 text-center">
+                  <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                    <div className="grid h-10 w-10 place-items-center rounded-full bg-destructive/10 text-destructive">
+                      <AlertCircle className="h-4 w-4" />
+                    </div>
+                    <p className="text-sm font-medium text-destructive">Não foi possível carregar</p>
+                    <p className="text-xs text-muted-foreground">{getErrorMessage(error)}</p>
+                    {onRetry && (
+                      <button
+                        onClick={onRetry}
+                        className="mt-1 inline-flex h-8 items-center gap-1.5 rounded-md border border-border/60 bg-card px-3 text-xs font-medium hover:bg-accent"
+                      >
+                        <RefreshCw className="h-3 w-3" /> Tentar novamente
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
             ) : (rows ?? []).length === 0 ? (
               <tr>
                 <td colSpan={shown.length} className="px-4 py-16 text-center">
@@ -106,6 +150,7 @@ export function DataTable<T>({
                       <Inbox className="h-4 w-4" />
                     </div>
                     <p className="text-sm">{emptyMessage}</p>
+                    {emptyHint && <p className="text-xs">{emptyHint}</p>}
                   </div>
                 </td>
               </tr>
