@@ -9,6 +9,13 @@ async function assertAdmin(ctx: any) {
 }
 
 // ============ FINANCIAL DASHBOARD ============
+export type FinanceAlert = {
+  id: string;
+  level: "critical" | "warning" | "info";
+  title: string;
+  message: string;
+  metric?: string;
+};
 export type FinanceSummary = {
   mrr_cents: number;
   arr_cents: number;
@@ -19,6 +26,12 @@ export type FinanceSummary = {
   by_plan: Array<{ plan_id: string; plan_name: string; price_cents: number; active: number; mrr_cents: number }>;
   mrr_trend: Array<{ month: string; mrr_cents: number; new_subs: number; churned: number }>;
   upcoming_renewals: Array<{ id: string; user_name: string; plan_name: string; price_cents: number; renew_at: string }>;
+  alerts: FinanceAlert[];
+  renewals_7d_count: number;
+  renewals_7d_cents: number;
+  trials_expiring_7d: number;
+  overdue_count: number;
+  mrr_delta_pct: number;
 };
 
 export const adminFinanceSummary = createServerFn({ method: "GET" })
