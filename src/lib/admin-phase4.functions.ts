@@ -108,6 +108,39 @@ export const adminFinanceSummary = createServerFn({ method: "GET" })
       nameMap = new Map(((profs ?? []) as Array<{ id: string; display_name: string | null }>).map((p) => [p.id, p.display_name ?? p.id.slice(0, 8)]));
     }
 
+    // Alerts + extra KPIs
+    const in7 = now + 7 * 86400_000;
+    let renewals7Count = 0;
+    let renewals7Cents = 0;
+    let trialsExpiring7 = 0;
+    let overdueCount = 0;
+    for (const s of list) {
+      if (s.status === "active" && s.current_period_end) {
+        const t = new Date(s.current_period_end).getTime();
+        if (t >= now && t <= in7) { renewals7Count++; renewals7Cents += planMap.get(s.plan_id)?.price_cents ?? 0; }
+        if (t < now) overdueCount++;
+      }
+      if (s.status === "trialing" && s.trial_ends_at) {
+        const t = new Date(s.trial_ends_at).getTime();
+        if (t >= now && t <= in7) trialsExpiring7++;
+      }
+      if (s.status === "past_due") overdueCount++;
+    }
+    const prevMrr = trend.length >= 2 ? trend[trend.length - 2].mrr_cents : 0;
+    const curMrr = trend.length ? trend[trend.length - 1].mrr_cents : 0;
+    const mrrDeltaPct = prevMrr > 0 ? Math.round(((curMrr - prevMrr) / prevMrr) * 10000) / 100 : 0;
+
+    const alerts: FinanceAlert[] = [];
+    if (churn > 5) alerts.push({ id: "churn-high", level: "critical", title: "Churn acima do limite", message: `Taxa de cancelamento de ${churn.toFixed(2)}% nos últimos 30 dias.`, metric: `${churn.toFixed(1)}%` });
+    else if (churn > 3) alerts.push({ id: "churn-warn", level: "warning", title: "Churn em alerta", message: `Churn de ${churn.toFixed(2)}% — monitorar retenção.`, metric: `${churn.toFixed(1)}%` });
+    if (mrrDeltaPct < -5) alerts.push({ id: "mrr-drop", level: "critical", title: "Queda de MRR", message: `MRR caiu ${Math.abs(mrrDeltaPct)}% em relação ao mês anterior.`, metric: `${mrrDeltaPct}%` });
+    else if (mrrDeltaPct < 0) alerts.push({ id: "mrr-slip", level: "warning", title: "MRR em leve queda", message: `Variação de ${mrrDeltaPct}% no mês.`, metric: `${mrrDeltaPct}%` });
+    if (overdueCount > 0) alerts.push({ id: "overdue", level: "critical", title: "Assinaturas vencidas", message: `${overdueCount} assinatura(s) com pagamento pendente ou vencido.`, metric: String(overdueCount) });
+    if (renewals7Count >= 5) alerts.push({ id: "renew-7", level: "info", title: "Renovações concentradas", message: `${renewals7Count} renovações nos próximos 7 dias (${(renewals7Cents / 100).toFixed(2)} BRL).`, metric: String(renewals7Count) });
+    if (trialsExpiring7 > 0) alerts.push({ id: "trials-7", level: "warning", title: "Trials expirando", message: `${trialsExpiring7} trial(s) terminam em até 7 dias — oportunidade de conversão.`, metric: String(trialsExpiring7) });
+    if (active === 0) alerts.push({ id: "no-active", level: "warning", title: "Sem assinantes ativos", message: "Nenhuma assinatura ativa no momento.", metric: "0" });
+    if (!alerts.length) alerts.push({ id: "ok", level: "info", title: "Tudo estável", message: "Nenhum alerta financeiro no momento.", metric: "OK" });
+
     return {
       mrr_cents: mrr,
       arr_cents: mrr * 12,
@@ -130,6 +163,12 @@ export const adminFinanceSummary = createServerFn({ method: "GET" })
         price_cents: planMap.get(s.plan_id)?.price_cents ?? 0,
         renew_at: s.current_period_end!,
       })),
+      alerts,
+      renewals_7d_count: renewals7Count,
+      renewals_7d_cents: renewals7Cents,
+      trials_expiring_7d: trialsExpiring7,
+      overdue_count: overdueCount,
+      mrr_delta_pct: mrrDeltaPct,
     };
   });
 
