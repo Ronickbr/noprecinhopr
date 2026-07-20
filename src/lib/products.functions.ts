@@ -886,3 +886,142 @@ export const listMerchantPlansForAdmin = createServerFn({ method: "GET" })
       .order("sort_order");
     return data ?? [];
   });
+
+// ------------ ADMIN: overview stats ------------
+export const adminOverviewStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const since = new Date(Date.now() - 30 * 86400e3).toISOString();
+    const [stores, products, offers, categories, users, roles, clicks30d, subs] = await Promise.all([
+      supabaseAdmin.from("stores").select("id, status", { count: "exact", head: false }),
+      supabaseAdmin.from("products").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("offers").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("categories").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("profiles").select("id", { count: "exact", head: true }),
+      supabaseAdmin.from("user_roles").select("role"),
+      supabaseAdmin.from("clicks").select("id", { count: "exact", head: true }).gte("created_at", since),
+      supabaseAdmin.from("merchant_subscriptions").select("status"),
+    ]);
+    const storeRows = stores.data ?? [];
+    const roleCounts: Record<string, number> = { admin: 0, merchant: 0, user: 0 };
+    for (const r of (roles.data ?? []) as { role: string }[]) roleCounts[r.role] = (roleCounts[r.role] ?? 0) + 1;
+    const subCounts: Record<string, number> = {};
+    for (const s of (subs.data ?? []) as { status: string }[]) subCounts[s.status] = (subCounts[s.status] ?? 0) + 1;
+    return {
+      stores: { total: storeRows.length, approved: storeRows.filter((s) => s.status === "approved").length, pending: storeRows.filter((s) => s.status === "pending").length, suspended: storeRows.filter((s) => s.status === "suspended").length },
+      products: products.count ?? 0,
+      offers: offers.count ?? 0,
+      categories: categories.count ?? 0,
+      users: users.count ?? 0,
+      roles: roleCounts,
+      clicks30d: clicks30d.count ?? 0,
+      subscriptions: subCounts,
+    };
+  });
+
+// ------------ ADMIN: categories CRUD ------------
+export const adminListCategories = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin.from("categories").select("id, slug, name, parent_id, sort_order").order("sort_order");
+    return data ?? [];
+  });
+
+export const adminUpsertCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) =>
+    z.object({
+      id: z.string().uuid().optional(),
+      slug: z.string().min(1).max(80),
+      name: z.string().min(1).max(120),
+      parent_id: z.string().uuid().nullable().optional(),
+      sort_order: z.number().int().min(0).default(0),
+    }).parse(raw),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.id) {
+      await supabaseAdmin.from("categories").update({ slug: data.slug, name: data.name, parent_id: data.parent_id ?? null, sort_order: data.sort_order }).eq("id", data.id);
+    } else {
+      await supabaseAdmin.from("categories").insert({ slug: data.slug, name: data.name, parent_id: data.parent_id ?? null, sort_order: data.sort_order });
+    }
+    return { ok: true };
+  });
+
+export const adminDeleteCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("categories").delete().eq("id", data.id);
+    return { ok: true };
+  });
+
+// ------------ ADMIN: users ------------
+export const adminListUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [profilesRes, rolesRes] = await Promise.all([
+      supabaseAdmin.from("profiles").select("id, display_name, created_at").order("created_at", { ascending: false }).limit(500),
+      supabaseAdmin.from("user_roles").select("user_id, role"),
+    ]);
+    const rolesByUser = new Map<string, string[]>();
+    for (const r of (rolesRes.data ?? []) as { user_id: string; role: string }[]) {
+      const arr = rolesByUser.get(r.user_id) ?? [];
+      arr.push(r.role);
+      rolesByUser.set(r.user_id, arr);
+    }
+    let emails = new Map<string, string>();
+    try {
+      const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      emails = new Map((authList?.users ?? []).map((u) => [u.id, u.email ?? ""]));
+    } catch { /* ignore */ }
+    return (profilesRes.data ?? []).map((p) => ({
+      id: p.id,
+      display_name: p.display_name,
+      email: emails.get(p.id) ?? null,
+      created_at: p.created_at,
+      roles: rolesByUser.get(p.id) ?? [],
+    }));
+  });
+
+// ------------ ADMIN: products ------------
+export const adminListAllProducts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => z.object({ q: z.string().optional(), page: z.number().int().min(1).default(1) }).parse(raw ?? {}))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const pageSize = 50;
+    const from = (data.page - 1) * pageSize;
+    let q = supabaseAdmin.from("products").select("id, slug, name, brand, image_url, category_id, created_at", { count: "exact" }).order("created_at", { ascending: false }).range(from, from + pageSize - 1);
+    if (data.q) q = q.ilike("name", `%${data.q}%`);
+    const { data: rows, count } = await q;
+    return { rows: rows ?? [], count: count ?? 0, page: data.page, pageSize };
+  });
+
+export const adminDeleteProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((raw: unknown) => z.object({ id: z.string().uuid() }).parse(raw))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("offers").delete().eq("product_id", data.id);
+    await supabaseAdmin.from("products").delete().eq("id", data.id);
+    return { ok: true };
+  });
