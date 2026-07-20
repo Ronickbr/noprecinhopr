@@ -256,8 +256,11 @@ async def main() -> int:
                 "  Sign in as an admin in the Lovable preview to enable the full suite.\n"
             )
             await page.goto(f"{BASE_URL}/admin", wait_until="domcontentloaded")
-            await page.wait_for_timeout(600)
-            redirected = "/auth" in page.url
+            try:
+                await page.wait_for_url("**/auth**", timeout=5000)
+                redirected = True
+            except Exception:
+                redirected = "/auth" in page.url
             report.add(
                 Result(
                     name="unauthenticated /admin redirects to /auth",
