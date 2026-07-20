@@ -194,6 +194,7 @@ function PlansPage() {
       <p className="text-xs text-muted-foreground">
         Para atribuir planos individualmente, use a página de <a href="/admin/lojas" className="text-primary hover:underline">Lojas</a>.
       </p>
+      {dialog}
     </div>
   );
 }
