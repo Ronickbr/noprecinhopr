@@ -93,6 +93,87 @@ function RegioesPage() {
         </div>
       </div>
 
+      {d?.pr_drilldown && (
+        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-transparent p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <span className="inline-flex h-6 items-center rounded-md border border-primary/40 bg-primary/10 px-2 font-mono text-[11px] text-primary">PR</span>
+                Drill-down Paraná
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">Análise regional detalhada de lojas, ofertas e cliques.</p>
+            </div>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Estado foco</span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <MiniCell label="Lojas PR" value={d.pr_drilldown.total_stores} />
+            <MiniCell label="Cidades PR" value={d.pr_drilldown.cities} />
+            <MiniCell label="Ofertas" value={d.pr_drilldown.total_products} />
+            <MiniCell label="Cliques 30d" value={d.pr_drilldown.total_clicks_30d} accent="highlight" />
+            <MiniCell label="Concentração top 3" value={`${d.pr_drilldown.concentration_top3_pct}%`} accent="primary" />
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-lg border border-border/50 bg-card p-4">
+              <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top cidades no Paraná</h4>
+              {d.pr_drilldown.top_cities.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">Sem lojas cadastradas no PR ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {d.pr_drilldown.top_cities.map((c, i) => (
+                    <div key={c.city} className="flex items-center gap-3">
+                      <span className="w-5 shrink-0 font-mono text-[11px] text-muted-foreground">{i + 1}.</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="truncate text-sm font-medium">{c.city}</span>
+                          <span className="font-mono text-xs text-muted-foreground">{c.share_stores}%</span>
+                        </div>
+                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div className="h-full bg-primary" style={{ width: `${c.share_stores}%` }} />
+                        </div>
+                        <div className="mt-1 flex gap-3 font-mono text-[10px] text-muted-foreground">
+                          <span>{c.stores} lojas</span>
+                          <span>{c.products} ofertas</span>
+                          <span className="text-highlight">{c.clicks_30d} cliques</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="rounded-lg border border-border/50 bg-card p-4">
+              <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Meso-regiões</h4>
+              {d.pr_drilldown.regions.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">Sem dados regionais.</p>
+              ) : (
+                <div className="space-y-2">
+                  {d.pr_drilldown.regions.map((r) => {
+                    const share = d.pr_drilldown.total_stores > 0 ? (r.stores / d.pr_drilldown.total_stores) * 100 : 0;
+                    return (
+                      <div key={r.region} className="rounded-md border border-border/40 bg-background/50 p-3">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-sm font-medium">{r.region}</span>
+                          <span className="font-mono text-xs text-primary">{r.stores} lojas</span>
+                        </div>
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div className="h-full bg-gradient-to-r from-primary to-highlight" style={{ width: `${share}%` }} />
+                        </div>
+                        <div className="mt-1.5 flex justify-between font-mono text-[10px] text-muted-foreground">
+                          <span>{r.products} ofertas</span>
+                          <span>{r.clicks_30d} cliques 30d</span>
+                          <span>{share.toFixed(1)}% do PR</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border border-border/60 bg-card">
         <div className="flex flex-wrap items-center gap-3 border-b border-border/60 p-4">
           <div className="flex gap-1 rounded-md border border-border/60 bg-background p-0.5">
@@ -167,6 +248,16 @@ function UnlinkedTable({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function MiniCell({ label, value, accent }: { label: string; value: number | string; accent?: "primary" | "highlight" }) {
+  const color = accent === "primary" ? "text-primary" : accent === "highlight" ? "text-highlight" : "text-foreground";
+  return (
+    <div className="rounded-lg border border-border/50 bg-card/70 px-3 py-2">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 font-mono text-lg tabular-nums ${color}`}>{value}</div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { PageHeader, StatCard } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { adminFinanceSummary, type FinanceSummary } from "@/lib/admin-phase4.functions";
 import { formatBRL } from "@/lib/format";
-import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock } from "lucide-react";
+import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock, AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, Legend,
@@ -52,6 +52,45 @@ function FinanceiroPage() {
         <StatCard label="Assinantes ativos" value={d?.active_subs ?? "—"} icon={Users} accent="highlight" hint={d ? `${d.trial_subs} em trial` : ""} />
         <StatCard label="Churn (30d)" value={d ? `${d.churn_rate}%` : "—"} icon={TrendingDown} accent="destructive" hint={d ? `${d.canceled_last_30d} cancelamentos` : ""} />
       </div>
+
+      {d?.alerts && d.alerts.length > 0 && (
+        <div className="rounded-xl border border-border/60 bg-card p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold"><AlertTriangle className="h-4 w-4 text-warning" /> Alertas financeiros</h3>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{d.alerts.length} sinal(is)</span>
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            {d.alerts.map((a) => {
+              const styles = a.level === "critical"
+                ? { border: "border-destructive/40", bg: "bg-destructive/5", icon: AlertCircle, iconColor: "text-destructive" }
+                : a.level === "warning"
+                ? { border: "border-warning/40", bg: "bg-warning/5", icon: AlertTriangle, iconColor: "text-warning" }
+                : a.id === "ok"
+                ? { border: "border-success/40", bg: "bg-success/5", icon: CheckCircle2, iconColor: "text-success" }
+                : { border: "border-border/60", bg: "bg-muted/30", icon: Info, iconColor: "text-muted-foreground" };
+              const Icon = styles.icon;
+              return (
+                <div key={a.id} className={`flex items-start gap-3 rounded-lg border ${styles.border} ${styles.bg} p-3`}>
+                  <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${styles.iconColor}`} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{a.title}</p>
+                      {a.metric && <span className="font-mono text-[11px] text-muted-foreground">{a.metric}</span>}
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{a.message}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/40 pt-3 md:grid-cols-4">
+            <MiniKpi label="Renov. 7d" value={String(d.renewals_7d_count)} hint={formatBRL(d.renewals_7d_cents / 100)} />
+            <MiniKpi label="Trials expirando" value={String(d.trials_expiring_7d)} hint="próximos 7 dias" />
+            <MiniKpi label="Vencidas" value={String(d.overdue_count)} hint="ação necessária" tone={d.overdue_count > 0 ? "danger" : "ok"} />
+            <MiniKpi label="Δ MRR mês" value={`${d.mrr_delta_pct > 0 ? "+" : ""}${d.mrr_delta_pct}%`} hint="vs mês anterior" tone={d.mrr_delta_pct < 0 ? "danger" : "ok"} />
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-border/60 bg-card p-5">
@@ -111,6 +150,17 @@ function FinanceiroPage() {
           <DataTable rows={d?.upcoming_renewals ?? []} columns={renewCols} isLoading={q.isLoading} getRowId={(r: FinanceSummary["upcoming_renewals"][number]) => r.id} emptyMessage="Nenhuma renovação nos próximos 30 dias." />
         </div>
       </div>
+    </div>
+  );
+}
+
+function MiniKpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "ok" | "danger" }) {
+  const color = tone === "danger" ? "text-destructive" : tone === "ok" ? "text-foreground" : "text-foreground";
+  return (
+    <div className="rounded-lg border border-border/50 bg-background/50 px-3 py-2">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 font-mono text-base tabular-nums ${color}`}>{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground">{hint}</div>}
     </div>
   );
 }
