@@ -28,8 +28,8 @@ function FinanceiroPage() {
     { key: "mrr_cents", header: "MRR", align: "right", cell: (r) => <span className="font-mono text-success">{formatBRL(r.mrr_cents / 100)}</span> },
   ];
   const renewCols: Column<FinanceSummary["upcoming_renewals"][number]>[] = [
-    { key: "user_name", header: "Cliente" },
-    { key: "plan_name", header: "Plano" },
+    { key: "user_name", header: "Cliente", cell: (r) => <span>{r.user_name}</span> },
+    { key: "plan_name", header: "Plano", cell: (r) => <span>{r.plan_name}</span> },
     { key: "price_cents", header: "Valor", align: "right", cell: (r) => <span className="font-mono">{formatBRL(r.price_cents / 100)}</span> },
     { key: "renew_at", header: "Renova em", align: "right", cell: (r) => <span className="font-mono text-xs">{new Date(r.renew_at).toLocaleDateString("pt-BR")}</span> },
   ];
