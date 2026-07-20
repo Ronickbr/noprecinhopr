@@ -153,3 +153,14 @@ function FinanceiroPage() {
     </div>
   );
 }
+
+function MiniKpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "ok" | "danger" }) {
+  const color = tone === "danger" ? "text-destructive" : tone === "ok" ? "text-foreground" : "text-foreground";
+  return (
+    <div className="rounded-lg border border-border/50 bg-background/50 px-3 py-2">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 font-mono text-base tabular-nums ${color}`}>{value}</div>
+      {hint && <div className="text-[10px] text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
