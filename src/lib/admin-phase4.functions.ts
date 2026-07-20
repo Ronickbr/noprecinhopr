@@ -15,6 +15,14 @@ export type FinanceAlert = {
   title: string;
   message: string;
   metric?: string;
+  category: "churn" | "revenue" | "billing" | "conversion" | "growth" | "system";
+  threshold?: string;
+  current?: string;
+  context: string;
+  impact: string;
+  recommendations: string[];
+  related_metrics: Array<{ label: string; value: string }>;
+  severity_score: number; // 0-100
 };
 export type FinanceSummary = {
   mrr_cents: number;
