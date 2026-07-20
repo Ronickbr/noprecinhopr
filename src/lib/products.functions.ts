@@ -552,7 +552,12 @@ export const adminSetStoreStatus = createServerFn({ method: "POST" })
 // ------------ ADMIN: monitor merchants ------------
 export const adminListMerchants = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((raw: unknown) => z.object({
+    q: z.string().optional(),
+    status: z.enum(["all", "approved", "pending", "suspended"]).default("all"),
+    page: z.number().int().min(1).default(1),
+  }).parse(raw ?? {}))
+  .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
@@ -560,11 +565,18 @@ export const adminListMerchants = createServerFn({ method: "GET" })
     if (!isAdmin) throw new Error("Forbidden");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const pageSize = 30;
+    const from = (data.page - 1) * pageSize;
 
-    const { data: stores } = await supabaseAdmin
+    let baseQ = supabaseAdmin
       .from("stores")
-      .select("id, slug, name, status, trust_score, created_at, owner_user_id")
-      .order("created_at", { ascending: false });
+      .select("id, slug, name, status, trust_score, created_at, owner_user_id", { count: "exact" });
+
+    if (data.status !== "all") baseQ = baseQ.eq("status", data.status);
+    if (data.q) baseQ = baseQ.or(`name.ilike.%${data.q}%,slug.ilike.%${data.q}%`);
+
+    baseQ = baseQ.order("created_at", { ascending: false }).range(from, from + pageSize - 1);
+    const { data: stores, count } = await baseQ;
 
     const ownerIds = [
       ...new Set((stores ?? []).map((s) => s.owner_user_id).filter(Boolean)),
@@ -625,7 +637,7 @@ export const adminListMerchants = createServerFn({ method: "GET" })
       }
     }
 
-    return (stores ?? []).map((s) => {
+    const rows = (stores ?? []).map((s) => {
       const sub = s.owner_user_id ? subMap.get(s.owner_user_id) : null;
       const plan = sub ? planMap.get(sub.plan_id) : null;
       return {
@@ -661,6 +673,8 @@ export const adminListMerchants = createServerFn({ method: "GET" })
         clicks_30d: clickCounts.get(s.id) ?? 0,
       };
     });
+
+    return { rows, count: count ?? 0, page: data.page, pageSize };
   });
 
 // ------------ STORE DETAIL (public) ------------
