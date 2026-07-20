@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { PageHeader, StatCard } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
-import { adminFinanceSummary, type FinanceSummary } from "@/lib/admin-phase4.functions";
+import { adminFinanceSummary, type FinanceSummary, type FinanceAlert } from "@/lib/admin-phase4.functions";
 import { formatBRL } from "@/lib/format";
-import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock, AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
+import { Wallet, Users, TrendingDown, RefreshCcw, DollarSign, CalendarClock, AlertTriangle, AlertCircle, Info, CheckCircle2, ChevronDown, Target, Activity, Lightbulb, BarChart3 } from "lucide-react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, Legend,
