@@ -251,3 +251,13 @@ function UnlinkedTable({
     </div>
   );
 }
+
+function MiniCell({ label, value, accent }: { label: string; value: number | string; accent?: "primary" | "highlight" }) {
+  const color = accent === "primary" ? "text-primary" : accent === "highlight" ? "text-highlight" : "text-foreground";
+  return (
+    <div className="rounded-lg border border-border/50 bg-card/70 px-3 py-2">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 font-mono text-lg tabular-nums ${color}`}>{value}</div>
+    </div>
+  );
+}
