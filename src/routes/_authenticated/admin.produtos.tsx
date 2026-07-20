@@ -7,6 +7,8 @@ import { PageHeader, SearchInput } from "@/components/admin/ui";
 import { DataTable, type Column } from "@/components/admin/data-table";
 import { Trash2, ExternalLink, Package } from "lucide-react";
 import { formatBRL } from "@/lib/format";
+import { useConfirm } from "@/components/admin/confirm-dialog";
+import { getErrorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/_authenticated/admin/produtos")({
   component: ProductsPage,
@@ -22,7 +24,9 @@ function ProductsPage() {
   const [category, setCategory] = useState<string>("");
   const [sort, setSort] = useState<"recent" | "oldest" | "name_asc" | "name_desc">("recent");
 
-  const { data, isLoading } = useQuery({
+  const { confirm, dialog } = useConfirm();
+
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-products", applied, page, category, sort],
     queryFn: () => adminListAllProducts({ data: { q: applied || undefined, page, categorySlug: category || undefined, sort } }),
     retry: false,
@@ -32,7 +36,7 @@ function ProductsPage() {
   const remove = useMutation({
     mutationFn: (id: string) => adminDeleteProduct({ data: { id } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-products"] }); toast.success("Produto removido"); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e) => toast.error(getErrorMessage(e)),
   });
 
   const cols: Column<Row>[] = [
