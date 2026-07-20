@@ -128,6 +128,12 @@ function AuthPage() {
         </button>
       </form>
 
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        Ao continuar, você concorda com os{" "}
+        <a href="/termos" className="text-primary hover:underline">Termos de Uso</a> e a{" "}
+        <a href="/privacidade" className="text-primary hover:underline">Política de Privacidade</a>.
+      </p>
+
       <p className="mt-4 text-center text-sm text-muted-foreground">
         {mode === "signin" ? "Não tem conta?" : "Já tem conta?"}{" "}
         <button

@@ -15,6 +15,7 @@ function Layout() {
   const tabs = [
     { to: "/minha-conta/favoritos", label: "Favoritos" },
     { to: "/minha-conta/alertas", label: "Alertas" },
+    { to: "/minha-conta/privacidade", label: "Privacidade" },
   ] as const;
   return (
     <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8">

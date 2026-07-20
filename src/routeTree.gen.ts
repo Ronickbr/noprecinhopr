@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as BuscaRouteImport } from './routes/busca'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -22,6 +24,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedLojistaIndexRouteImport } from './routes/_authenticated/lojista.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiPublicTrackRouteImport } from './routes/api/public/track'
+import { Route as AuthenticatedMinhaContaPrivacidadeRouteImport } from './routes/_authenticated/minha-conta.privacidade'
 import { Route as AuthenticatedMinhaContaFavoritosRouteImport } from './routes/_authenticated/minha-conta.favoritos'
 import { Route as AuthenticatedMinhaContaAlertasRouteImport } from './routes/_authenticated/minha-conta.alertas'
 import { Route as AuthenticatedLojistaAssinaturaRouteImport } from './routes/_authenticated/lojista.assinatura'
@@ -43,9 +46,19 @@ import { Route as AuthenticatedAdminDenunciasRouteImport } from './routes/_authe
 import { Route as AuthenticatedAdminConfiguracoesRouteImport } from './routes/_authenticated/admin.configuracoes'
 import { Route as AuthenticatedAdminCategoriasRouteImport } from './routes/_authenticated/admin.categorias'
 
+const TermosRoute = TermosRouteImport.update({
+  id: '/termos',
+  path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadeRoute = PrivacidadeRouteImport.update({
+  id: '/privacidade',
+  path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BuscaRoute = BuscaRouteImport.update({
@@ -108,6 +121,12 @@ const ApiPublicTrackRoute = ApiPublicTrackRouteImport.update({
   path: '/api/public/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedMinhaContaPrivacidadeRoute =
+  AuthenticatedMinhaContaPrivacidadeRouteImport.update({
+    id: '/privacidade',
+    path: '/privacidade',
+    getParentRoute: () => AuthenticatedMinhaContaRoute,
+  } as any)
 const AuthenticatedMinhaContaFavoritosRoute =
   AuthenticatedMinhaContaFavoritosRouteImport.update({
     id: '/favoritos',
@@ -231,7 +250,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
@@ -257,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
+  '/minha-conta/privacidade': typeof AuthenticatedMinhaContaPrivacidadeRoute
   '/api/public/track': typeof ApiPublicTrackRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/lojista/': typeof AuthenticatedLojistaIndexRoute
@@ -265,7 +287,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
   '/loja/$slug': typeof LojaSlugRoute
@@ -290,6 +314,7 @@ export interface FileRoutesByTo {
   '/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
+  '/minha-conta/privacidade': typeof AuthenticatedMinhaContaPrivacidadeRoute
   '/api/public/track': typeof ApiPublicTrackRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/lojista': typeof AuthenticatedLojistaIndexRoute
@@ -300,7 +325,9 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/busca': typeof BuscaRoute
+  '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/termos': typeof TermosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/minha-conta': typeof AuthenticatedMinhaContaRouteWithChildren
   '/categoria/$slug': typeof CategoriaSlugRoute
@@ -326,6 +353,7 @@ export interface FileRoutesById {
   '/_authenticated/lojista/assinatura': typeof AuthenticatedLojistaAssinaturaRoute
   '/_authenticated/minha-conta/alertas': typeof AuthenticatedMinhaContaAlertasRoute
   '/_authenticated/minha-conta/favoritos': typeof AuthenticatedMinhaContaFavoritosRoute
+  '/_authenticated/minha-conta/privacidade': typeof AuthenticatedMinhaContaPrivacidadeRoute
   '/api/public/track': typeof ApiPublicTrackRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/lojista/': typeof AuthenticatedLojistaIndexRoute
@@ -336,7 +364,9 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/busca'
+    | '/privacidade'
     | '/sitemap.xml'
+    | '/termos'
     | '/admin'
     | '/minha-conta'
     | '/categoria/$slug'
@@ -362,6 +392,7 @@ export interface FileRouteTypes {
     | '/lojista/assinatura'
     | '/minha-conta/alertas'
     | '/minha-conta/favoritos'
+    | '/minha-conta/privacidade'
     | '/api/public/track'
     | '/admin/'
     | '/lojista/'
@@ -370,7 +401,9 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/busca'
+    | '/privacidade'
     | '/sitemap.xml'
+    | '/termos'
     | '/minha-conta'
     | '/categoria/$slug'
     | '/loja/$slug'
@@ -395,6 +428,7 @@ export interface FileRouteTypes {
     | '/lojista/assinatura'
     | '/minha-conta/alertas'
     | '/minha-conta/favoritos'
+    | '/minha-conta/privacidade'
     | '/api/public/track'
     | '/admin'
     | '/lojista'
@@ -404,7 +438,9 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/busca'
+    | '/privacidade'
     | '/sitemap.xml'
+    | '/termos'
     | '/_authenticated/admin'
     | '/_authenticated/minha-conta'
     | '/categoria/$slug'
@@ -430,6 +466,7 @@ export interface FileRouteTypes {
     | '/_authenticated/lojista/assinatura'
     | '/_authenticated/minha-conta/alertas'
     | '/_authenticated/minha-conta/favoritos'
+    | '/_authenticated/minha-conta/privacidade'
     | '/api/public/track'
     | '/_authenticated/admin/'
     | '/_authenticated/lojista/'
@@ -440,7 +477,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   BuscaRoute: typeof BuscaRoute
+  PrivacidadeRoute: typeof PrivacidadeRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TermosRoute: typeof TermosRoute
   CategoriaSlugRoute: typeof CategoriaSlugRoute
   LojaSlugRoute: typeof LojaSlugRoute
   ProdutoSlugRoute: typeof ProdutoSlugRoute
@@ -449,11 +488,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/termos': {
+      id: '/termos'
+      path: '/termos'
+      fullPath: '/termos'
+      preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade': {
+      id: '/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/busca': {
@@ -539,6 +592,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/track'
       preLoaderRoute: typeof ApiPublicTrackRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/minha-conta/privacidade': {
+      id: '/_authenticated/minha-conta/privacidade'
+      path: '/privacidade'
+      fullPath: '/minha-conta/privacidade'
+      preLoaderRoute: typeof AuthenticatedMinhaContaPrivacidadeRouteImport
+      parentRoute: typeof AuthenticatedMinhaContaRoute
     }
     '/_authenticated/minha-conta/favoritos': {
       id: '/_authenticated/minha-conta/favoritos'
@@ -731,6 +791,7 @@ const AuthenticatedAdminRouteWithChildren =
 interface AuthenticatedMinhaContaRouteChildren {
   AuthenticatedMinhaContaAlertasRoute: typeof AuthenticatedMinhaContaAlertasRoute
   AuthenticatedMinhaContaFavoritosRoute: typeof AuthenticatedMinhaContaFavoritosRoute
+  AuthenticatedMinhaContaPrivacidadeRoute: typeof AuthenticatedMinhaContaPrivacidadeRoute
 }
 
 const AuthenticatedMinhaContaRouteChildren: AuthenticatedMinhaContaRouteChildren =
@@ -738,6 +799,8 @@ const AuthenticatedMinhaContaRouteChildren: AuthenticatedMinhaContaRouteChildren
     AuthenticatedMinhaContaAlertasRoute: AuthenticatedMinhaContaAlertasRoute,
     AuthenticatedMinhaContaFavoritosRoute:
       AuthenticatedMinhaContaFavoritosRoute,
+    AuthenticatedMinhaContaPrivacidadeRoute:
+      AuthenticatedMinhaContaPrivacidadeRoute,
   }
 
 const AuthenticatedMinhaContaRouteWithChildren =
@@ -767,7 +830,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   BuscaRoute: BuscaRoute,
+  PrivacidadeRoute: PrivacidadeRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TermosRoute: TermosRoute,
   CategoriaSlugRoute: CategoriaSlugRoute,
   LojaSlugRoute: LojaSlugRoute,
   ProdutoSlugRoute: ProdutoSlugRoute,
