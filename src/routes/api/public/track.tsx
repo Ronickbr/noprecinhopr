@@ -26,6 +26,17 @@ export const Route = createFileRoute("/api/public/track")({
         const { data: offer } = await sb.from("offers").select("url").eq("id", offerId).maybeSingle();
         if (!offer?.url) return new Response("offer not found", { status: 404 });
 
+        // Only allow http(s) redirects — block javascript:, data:, file:, etc.
+        let target: URL;
+        try {
+          target = new URL(offer.url);
+        } catch {
+          return new Response("invalid offer url", { status: 400 });
+        }
+        if (target.protocol !== "http:" && target.protocol !== "https:") {
+          return new Response("invalid offer url", { status: 400 });
+        }
+
         // best-effort click logging via admin (no user auth here); fire-and-forget
         try {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -38,7 +49,7 @@ export const Route = createFileRoute("/api/public/track")({
           // ignore
         }
 
-        return Response.redirect(offer.url, 302);
+        return Response.redirect(target.toString(), 302);
       },
     },
   },

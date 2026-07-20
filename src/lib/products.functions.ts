@@ -371,14 +371,22 @@ export const listMyStoreProducts = createServerFn({ method: "GET" })
     return items;
   });
 
+const httpUrl = z
+  .string()
+  .url()
+  .max(500)
+  .refine((u) => u.startsWith("http://") || u.startsWith("https://"), {
+    message: "URL deve começar com http:// ou https://",
+  });
+
 const catalogRow = z.object({
   sku: z.string().min(1).max(120),
   name: z.string().min(2).max(200),
   brand: z.string().max(80).optional().nullable(),
   category: z.string().max(80).optional().nullable(),
   price: z.number().positive().max(10_000_000),
-  url: z.string().url().max(500),
-  image: z.string().url().max(500).optional().nullable(),
+  url: httpUrl,
+  image: httpUrl.optional().nullable(),
 });
 
 export const uploadCatalog = createServerFn({ method: "POST" })
