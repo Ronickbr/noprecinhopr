@@ -77,20 +77,25 @@ function SettingsPage() {
     <div className="space-y-6">
       <PageHeader title="Configurações" description="Identidade do site, SEO, redes, analytics e LGPD." />
       <div className="grid gap-4 lg:grid-cols-2">
-        {SECTIONS.map((s) => (
-          <SettingCard
-            key={s.key}
-            def={s}
-            values={q.data?.[s.key] ?? {}}
-            loading={q.isLoading}
-            onSave={(value) => m.mutate({ key: s.key, value })}
-            saving={m.isPending && m.variables?.key === s.key}
-          />
-        ))}
+        {SECTIONS.map((s) => {
+          const row = q.data?.find((r) => r.key === s.key);
+          const values = row ? (JSON.parse(row.value_json) as Record<string, unknown>) : {};
+          return (
+            <SettingCard
+              key={s.key}
+              def={s}
+              values={values}
+              loading={q.isLoading}
+              onSave={(value) => m.mutate({ key: s.key, value })}
+              saving={m.isPending && m.variables?.key === s.key}
+            />
+          );
+        })}
       </div>
     </div>
   );
 }
+
 
 function SettingCard({ def, values, loading, onSave, saving }: {
   def: SectionDef;
