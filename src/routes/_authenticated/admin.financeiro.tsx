@@ -73,7 +73,7 @@ function FinanceiroPage() {
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `R$${(v / 100).toFixed(0)}`} />
                 <Tooltip
                   contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                  formatter={(v: number) => formatBRL(v / 100)}
+                  formatter={(v) => formatBRL(Number(v) / 100)}
                 />
                 <Area type="monotone" dataKey="mrr_cents" stroke="hsl(var(--success))" fill="url(#mrrGrad)" strokeWidth={2} />
               </AreaChart>
